@@ -25,3 +25,4 @@ htmlcov/
 .mypy_cache/
 .ipynb_checkpoints
 *.pid
+.gitignore
