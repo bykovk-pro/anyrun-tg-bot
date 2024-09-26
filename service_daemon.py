@@ -4,11 +4,15 @@ import psutil
 import daemon
 from daemon import pidfile
 from api.telegram.api_telegram import setup_telegram_bot, run_telegram_bot
+from db.db_worker import init_database
 
 # Path to the PID file
 PID_FILE = '/tmp/arsbtlgbot.pid'
 
 def run():
+    # Initialize the database
+    init_database()
+    
     # Set up and run the Telegram bot
     telegram_bot = setup_telegram_bot()
     run_telegram_bot(telegram_bot)

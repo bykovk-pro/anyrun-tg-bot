@@ -13,7 +13,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 def setup_telegram_bot():
     if not TOKEN:
-        raise ValueError("Токен бота не найден. Убедитесь, что переменная окружения ANYRUN_SB_API_TOKEN установлена.")
+        raise EnvironmentError("Токен бота не найден. Убедитесь, что переменная окружения ANYRUN_SB_API_TOKEN установлена.")
     
     application = Application.builder().token(TOKEN).build()
     
