@@ -3,8 +3,9 @@ import signal
 import psutil
 import daemon
 from daemon import pidfile
-from api.telegram.api_telegram import setup_telegram_bot, run_telegram_bot
-from db.db_worker import init_database
+from api.telegram import setup_telegram_bot, run_telegram_bot
+from db.worker import init_database
+from lang.director import get_constant
 
 # Path to the PID file
 PID_FILE = '/tmp/arsbtlgbot.pid'

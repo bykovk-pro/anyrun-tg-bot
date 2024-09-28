@@ -1,12 +1,17 @@
 import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from lang.director import get
 
 # Получаем токен из переменной окружения
 TOKEN = os.getenv('ANYRUN_SB_API_TOKEN')
 
+def get_user_language(update: Update):
+    return update.effective_user.language_code or 'en'
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text('Привет! Я бот.')
+    welcome_message = get('WELCOME_MESSAGE')
+    await update.message.reply_text(welcome_message)
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(update.message.text)
@@ -24,3 +29,4 @@ def setup_telegram_bot():
 
 def run_telegram_bot(application):
     application.run_polling()
+
