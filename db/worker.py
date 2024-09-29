@@ -1,79 +1,125 @@
 import os
 import sqlite3
-import uuid
 import zipfile
 import time
-from db.users import *
+import logging
+from db.common import DB_FILE, generate_uuid
+from db.users import add_user, get_user_by_telegram_id, get_admins, update_user_admin_status
 from db.api_keys import *
-from lang.director import get_constant
-
-# Path to the database file
-DB_FILE = os.path.join(os.path.dirname(__file__), 'arsbtlgbot.db')
-
-def generate_uuid():
-    # Generate a new UUID
-    return str(uuid.uuid4())
+from lang.director import get
+from utils.logger import log
+from dotenv import load_dotenv
 
 def init_database():
-    # Check if the database file exists
-    if not os.path.exists(DB_FILE):
-        # If the file doesn't exist, create it and set up the database
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
+    try:
+        # Check if the database file exists
+        if not os.path.exists(DB_FILE):
+            # If the file doesn't exist, create it and set up the database
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
 
-        # Create users table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                user_uuid TEXT PRIMARY KEY,
-                telegram_id INTEGER UNIQUE NOT NULL,
-                first_access_date DATETIME NOT NULL,
-                last_access_date DATETIME,
-                is_banned BOOLEAN DEFAULT FALSE,
-                is_deleted BOOLEAN DEFAULT FALSE,
-                is_admin BOOLEAN DEFAULT FALSE
-            )
-        ''')
+            # Create users table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    user_uuid TEXT PRIMARY KEY,
+                    telegram_id INTEGER UNIQUE NOT NULL,
+                    first_access_date DATETIME NOT NULL,
+                    last_access_date DATETIME,
+                    is_banned BOOLEAN DEFAULT FALSE,
+                    is_deleted BOOLEAN DEFAULT FALSE,
+                    is_admin BOOLEAN DEFAULT FALSE
+                )
+            ''')
 
-        # Create API keys table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS api_keys (
-                key_uuid TEXT PRIMARY KEY,
-                user_uuid TEXT NOT NULL,
-                api_key TEXT NOT NULL,
-                added_date DATETIME NOT NULL,
-                key_name TEXT DEFAULT 'API Key',
-                is_active BOOLEAN DEFAULT FALSE,
-                is_deleted BOOLEAN DEFAULT FALSE,
-                FOREIGN KEY (user_uuid) REFERENCES users(user_uuid),
-                UNIQUE (user_uuid, api_key)
-            )
-        ''')
+            # Create API keys table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS api_keys (
+                    key_uuid TEXT PRIMARY KEY,
+                    user_uuid TEXT NOT NULL,
+                    api_key TEXT NOT NULL,
+                    added_date DATETIME NOT NULL,
+                    key_name TEXT DEFAULT 'API Key',
+                    is_active BOOLEAN DEFAULT FALSE,
+                    is_deleted BOOLEAN DEFAULT FALSE,
+                    FOREIGN KEY (user_uuid) REFERENCES users(user_uuid),
+                    UNIQUE (user_uuid, api_key)
+                )
+            ''')
 
-        # Commit changes and close the connection
-        conn.commit()
-        conn.close()
+            # Commit changes and close the connection
+            conn.commit()
+            conn.close()
 
-        # Add the admin user from environment variable
-        admin_id = os.getenv('ANYRUN_SB_ADMIN_ID')
-        if admin_id is None:
-            print("Error: Environment variable ANYRUN_SB_ADMIN_ID is not set.")
-            exit(1)
+            log('DATABASE_CREATED', logging.INFO, path=DB_FILE)
+        else:
+            log('DATABASE_EXISTS', logging.DEBUG, path=DB_FILE)
+    except Exception as e:
+        log('DATABASE_INIT_ERROR', logging.CRITICAL, error=str(e))
+        raise
 
-        add_user(telegram_id=admin_id, is_admin=True)
+def check_and_setup_admin():
+    # Загружаем переменные окружения из .env файла
+    load_dotenv()
+    
+    admin_id = os.getenv('ANYRUN_SB_ADMIN_ID')
+    log('CHECKING_ADMIN', logging.DEBUG, admin_id=admin_id)
 
-        print(f"Database created at {DB_FILE}")
-    else:
-        print(f"Database already exists at {DB_FILE}")
+    if admin_id:
+        try:
+            admin_id = int(admin_id)
+        except ValueError:
+            log('INVALID_ADMIN_ID', logging.ERROR, admin_id=admin_id)
+            return
+        
+        admin_user = get_user_by_telegram_id(admin_id)
+        log('ADMIN_USER_CHECK', logging.DEBUG, admin_user=admin_user)
+        if not admin_user:
+            add_user(telegram_id=admin_id, is_admin=True)
+            log('ADMIN_ID_SET_CREATING_ADMIN', logging.INFO)
+        elif not admin_user['is_admin'] or admin_user['is_deleted']:
+            update_user_admin_status(admin_user['user_uuid'], True)
+            log('ADMIN_STATUS_UPDATED', logging.INFO, telegram_id=admin_id)
+        return
+    
+    admins = get_admins()
+    
+    if len(admins) == 1:
+        log('ADMIN_ID_NOT_SET_ADMIN_FOUND', logging.WARNING, telegram_id=admins[0]['telegram_id'])
+        return
+    
+    if len(admins) > 1:
+        log('ADMIN_ID_NOT_SET_MULTIPLE_ADMINS', logging.WARNING)
+        print(get('CHOOSE_ADMIN_PROMPT'))
+        for i, admin in enumerate(admins, 1):
+            print(f"{i}. {admin['telegram_id']}")
+        
+        try:
+            choice = int(input(get('ENTER_ADMIN_CHOICE')))
+            if 1 <= choice <= len(admins):
+                chosen_admin = admins[choice - 1]
+                for admin in admins:
+                    update_user_admin_status(admin['user_uuid'], admin['telegram_id'] == chosen_admin['telegram_id'])
+                log('ADMIN_ID_NOT_SET_ADMIN_FOUND', logging.WARNING, telegram_id=chosen_admin['telegram_id'])
+                return
+        except ValueError:
+            pass
+        
+        log('ADMIN_CHOICE_CANCELLED', logging.ERROR)
+        exit(1)
+    
+    log('NO_ADMIN_FOUND', logging.CRITICAL)
+    exit(1)
 
 def reinitialize_database():
     # Reinitialize the database after user confirmation
-    confirmation = input("Type 'REINIT' to confirm reinitialization: ")
+    confirmation = input(get('REINIT_CONFIRMATION'))
     if confirmation == 'REINIT':
         os.remove(DB_FILE)
-        print("Database deleted.")
+        log('DATABASE_DELETED', logging.WARNING, path=DB_FILE)
         init_database()
+        check_and_setup_admin()
     else:
-        print("Reinitialization canceled.")
+        log('REINIT_CANCELED', logging.INFO)
 
 def backup_database():
     # Create a backup of the database
@@ -83,7 +129,7 @@ def backup_database():
     with zipfile.ZipFile(backup_file, 'w') as zipf:
         zipf.write(DB_FILE, os.path.basename(DB_FILE))
 
-    print(f"Backup created at {backup_file}")
+    log('BACKUP_CREATED', logging.INFO, path=backup_file)
 
 # Function to get a database connection
 def get_db_connection():
@@ -91,5 +137,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Call this function when the module is imported to ensure the database exists
+# Call these functions when the module is imported to ensure the database exists and an admin is set up
 init_database()
+check_and_setup_admin()

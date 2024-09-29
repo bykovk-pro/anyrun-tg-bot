@@ -9,6 +9,7 @@ This Telegram bot provides a simple interface to interact with the ANY.RUN Sandb
 - Check the status of ongoing analyses
 - Manage API keys within the Telegram interface
 - Multi-language support for a global user base
+- Flexible logging system with adjustable log levels
 
 This bot simplifies the process of using ANY.RUN's powerful malware analysis capabilities, making it accessible directly from your Telegram client. It's designed for security researchers, malware analysts, and IT professionals who need quick and easy access to sandbox analysis results.
 
@@ -41,18 +42,35 @@ For detailed usage instructions and available commands, start a chat with the bo
    ```
 
 3. Add language files:
-   Create JSON files in the `lang` directory for each supported language (e.g., `en_US.json`, `ru_RU.json`).
+   Create JSON files in the `lang` directory for each supported language (e.g., `en.json`, `ru.json`, `sr.json`, `sr-Latn.json`).
 
 ## Usage
 
 Control the bot service with the following commands:
 
-- Start: `python main.py start`
+- Start: `python main.py start [--log LEVEL] [--echo LEVEL]`
 - Stop: `python main.py stop`
-- Restart: `python main.py restart`
+- Restart: `python main.py restart [--log LEVEL] [--echo LEVEL]`
+- Check status: `python main.py status`
 - Kill all instances: `python main.py kill_all`
-- Status: `python main.py status`
+- Update log levels: `python main.py log_level [--log LEVEL] [--echo LEVEL]`
+- View logs: `python main.py logs [--lines NUMBER]`
+
+Log levels can be set to: DEBUG, INFO, WARNING, ERROR, CRITICAL.
+
+Examples:
+```
+python main.py start --log INFO --echo ERROR
+python main.py log_level --log DEBUG --echo INFO
+python main.py logs --lines 100
+```
 
 ## Localization
 
 To add or modify localized strings, edit the corresponding JSON files in the `lang` directory.
+
+## Logging
+
+The bot uses a flexible logging system that allows for separate control of file logging and console output. Log files are automatically created daily with the format `YYYYMMDD.log`.
+
+You can adjust log levels at runtime using the `log_level` command, which allows you to change logging verbosity without restarting the bot.

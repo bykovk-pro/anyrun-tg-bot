@@ -2,4 +2,3 @@ python-daemon==3.0.1
 psutil==5.9.5
 python-telegram-bot==20.3
 python-dotenv==1.0.0
-sqlite3==2.6.0
