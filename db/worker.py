@@ -12,9 +12,8 @@ from dotenv import load_dotenv
 
 def init_database():
     try:
-        # Check if the database file exists
         if not os.path.exists(DB_FILE):
-            # If the file doesn't exist, create it and set up the database
+            conn = sqlite3.connect(DB_FILE)
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
 
@@ -31,7 +30,6 @@ def init_database():
                 )
             ''')
 
-            # Create API keys table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS api_keys (
                     key_uuid TEXT PRIMARY KEY,
@@ -46,7 +44,6 @@ def init_database():
                 )
             ''')
 
-            # Commit changes and close the connection
             conn.commit()
             conn.close()
 
@@ -58,7 +55,6 @@ def init_database():
         raise
 
 def check_and_setup_admin():
-    # Загружаем переменные окружения из .env файла
     load_dotenv()
     
     admin_id = os.getenv('ANYRUN_SB_ADMIN_ID')
@@ -93,36 +89,34 @@ def check_and_setup_admin():
         for i, admin in enumerate(admins, 1):
             print(f"{i}. {admin['telegram_id']}")
         
-        try:
-            choice = int(input(get('ENTER_ADMIN_CHOICE')))
-            if 1 <= choice <= len(admins):
-                chosen_admin = admins[choice - 1]
-                for admin in admins:
-                    update_user_admin_status(admin['user_uuid'], admin['telegram_id'] == chosen_admin['telegram_id'])
-                log('ADMIN_ID_NOT_SET_ADMIN_FOUND', logging.WARNING, telegram_id=chosen_admin['telegram_id'])
-                return
-        except ValueError:
-            pass
-        
-        log('ADMIN_CHOICE_CANCELLED', logging.ERROR)
-        exit(1)
+        while True:
+            try:
+                choice = int(input(get('ENTER_ADMIN_CHOICE')))
+                if 1 <= choice <= len(admins):
+                    chosen_admin = admins[choice - 1]
+                    for admin in admins:
+                        update_user_admin_status(admin['user_uuid'], admin['telegram_id'] == chosen_admin['telegram_id'])
+                    log('ADMIN_ID_NOT_SET_ADMIN_FOUND', logging.WARNING, telegram_id=chosen_admin['telegram_id'])
+                    return
+                else:
+                    print("Неверный выбор. Пожалуйста, выберите число из списка.")
+            except ValueError:
+                print("Пожалуйста, введите число.")
     
-    log('NO_ADMIN_FOUND', logging.CRITICAL)
+    print(get('NO_ADMIN_FOUND'))
     exit(1)
 
 def reinitialize_database():
-    # Reinitialize the database after user confirmation
     confirmation = input(get('REINIT_CONFIRMATION'))
     if confirmation == 'REINIT':
         os.remove(DB_FILE)
-        log('DATABASE_DELETED', logging.WARNING, path=DB_FILE)
+        print(get('DATABASE_DELETED').format(path=DB_FILE))
         init_database()
         check_and_setup_admin()
     else:
-        log('REINIT_CANCELED', logging.INFO)
+        print(get('REINIT_CANCELED'))
 
 def backup_database():
-    # Create a backup of the database
     timestamp = int(time.time())
     backup_file = os.path.join(os.path.dirname(__file__), f'arsbtlgbot_{timestamp}.zip')
 
@@ -131,12 +125,10 @@ def backup_database():
 
     log('BACKUP_CREATED', logging.INFO, path=backup_file)
 
-# Function to get a database connection
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
-# Call these functions when the module is imported to ensure the database exists and an admin is set up
 init_database()
 check_and_setup_admin()

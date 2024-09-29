@@ -48,20 +48,18 @@ For detailed usage instructions and available commands, start a chat with the bo
 
 Control the bot service with the following commands:
 
-- Start: `python main.py start [--log LEVEL] [--echo LEVEL]`
+- Start: `python main.py start [--log LEVEL]`
 - Stop: `python main.py stop`
-- Restart: `python main.py restart [--log LEVEL] [--echo LEVEL]`
+- Restart: `python main.py restart [--log LEVEL]`
 - Check status: `python main.py status`
 - Kill all instances: `python main.py kill_all`
-- Update log levels: `python main.py log_level [--log LEVEL] [--echo LEVEL]`
 - View logs: `python main.py logs [--lines NUMBER]`
 
 Log levels can be set to: DEBUG, INFO, WARNING, ERROR, CRITICAL.
 
 Examples:
 ```
-python main.py start --log INFO --echo ERROR
-python main.py log_level --log DEBUG --echo INFO
+python main.py start --log INFO
 python main.py logs --lines 100
 ```
 
@@ -71,6 +69,16 @@ To add or modify localized strings, edit the corresponding JSON files in the `la
 
 ## Logging
 
-The bot uses a flexible logging system that allows for separate control of file logging and console output. Log files are automatically created daily with the format `YYYYMMDD.log`.
+The bot uses a flexible logging system. Log files are automatically created daily with the format `YYYYMMDD.log` in the user's home directory under `arsbtlgbot_logs/`.
 
-You can adjust log levels at runtime using the `log_level` command, which allows you to change logging verbosity without restarting the bot.
+## Database
+
+The bot uses an SQLite database to store user information and other options. The database file is located at `db/arsbtlgbot.db`.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

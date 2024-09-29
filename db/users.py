@@ -31,7 +31,7 @@ def get_user_by_telegram_id(telegram_id):
         FROM users
         WHERE telegram_id = ?
         LIMIT 1
-    ''', (int(telegram_id),))  # Убедимся, что telegram_id - целое число
+    ''', (int(telegram_id),))
 
     user = cursor.fetchone()
     conn.close()
@@ -68,7 +68,6 @@ def update_user_admin_status(user_uuid, is_admin):
     conn.close()
 
 def delete_user(user_uuid):
-    # Delete a user by setting is_deleted to True
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
@@ -82,7 +81,6 @@ def delete_user(user_uuid):
     conn.close()
 
 def get_user_uuid(telegram_id):
-    # Get user_uuid by telegram_id
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     

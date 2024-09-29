@@ -7,31 +7,27 @@ import logging
 import time
 import tempfile
 from daemon import pidfile
-from api.telegram import setup_telegram_bot, run_telegram_bot
+from api.telegram import setup_telegram_bot, run_telegram_bot, set_telegram_log_level
 from db.worker import init_database
-from utils.logger import set_log_level, set_console_level, log, save_log_levels, load_log_levels, initialize_loggers
+from utils.logger import set_log_level, log, setup_logging, get_log_level
 
-# Path to the PID file
 PID_FILE = os.path.join(tempfile.gettempdir(), 'arsbtlgbot.pid')
 
-# Global variables to store log levels
-current_log_level = logging.INFO
-current_echo_level = logging.ERROR
+current_log_level = logging.WARNING
 
 def signal_handler(signum, frame):
-    # Handler for SIGUSR1 signal
-    global current_log_level, current_echo_level
+    global current_log_level
     set_log_level(current_log_level)
-    set_console_level(current_echo_level)
-    log('LOG_LEVELS_UPDATED', logging.INFO, log_level=logging.getLevelName(current_log_level), echo_level=logging.getLevelName(current_echo_level))
+    set_telegram_log_level(current_log_level)
+    log('LOG_LEVELS_UPDATED', logging.INFO, log_level=logging.getLevelName(current_log_level))
 
 def run():
     try:
-        global current_log_level, current_echo_level
-        current_log_level, current_echo_level = load_log_levels()
+        global current_log_level
+        current_log_level = get_log_level()
 
         log('INITIALIZING_LOGGERS', logging.DEBUG)
-        initialize_loggers(current_log_level, current_echo_level)
+        setup_logging(current_log_level)
 
         log('SERVICE_STARTING', logging.INFO)
 
@@ -45,7 +41,7 @@ def run():
         log('SETTING_UP_TELEGRAM_BOT', logging.DEBUG)
         telegram_bot = setup_telegram_bot()
         log('TELEGRAM_BOT_SETUP_COMPLETE', logging.INFO)
-        log('RUNNING_TELEGRAM_BOT', logging.DEBUG)
+        log('RUNNING_TELEGRAM_BOT', logging.INFO)
         run_telegram_bot(telegram_bot)
     except SystemExit:
         log('SERVICE_STOPPING', logging.INFO)
@@ -60,7 +56,7 @@ def is_running():
     try:
         with open(PID_FILE, 'r') as f:
             pid = int(f.read().strip())
-        os.kill(pid, 0)  # Check if the process is alive
+        os.kill(pid, 0)
         return pid
     except (FileNotFoundError, ProcessLookupError, ValueError):
         return None
@@ -77,7 +73,7 @@ def cleanup_pid_file():
             log('PID_FILE_READ_ERROR', logging.ERROR, error=str(e))
             os.remove(PID_FILE)
 
-def start_daemon(log_level=logging.INFO, echo_level=logging.ERROR):
+def start_daemon(log_level=logging.WARNING):
     cleanup_pid_file()
     
     log('STARTING_DAEMON', logging.DEBUG, pid_file=PID_FILE)
@@ -89,34 +85,31 @@ def start_daemon(log_level=logging.INFO, echo_level=logging.ERROR):
     try:
         pid = os.fork()
         if pid > 0:
-            # Exit parent process
             sys.exit(0)
     except OSError as e:
         log('FORK_FAILED', logging.CRITICAL, error=str(e))
         sys.exit(1)
     
-    # Изменяем рабочую директорию на домашнюю директорию пользователя
     os.chdir(os.path.expanduser('~'))
     os.setsid()
     os.umask(0)
     
-    # Write PID file
     with open(PID_FILE, 'w') as f:
         f.write(str(os.getpid()))
     
     try:
-        log('SAVING_LOG_LEVELS', logging.DEBUG)
-        save_log_levels(log_level, echo_level)
-        log('INITIALIZING_LOGGERS', logging.DEBUG)
-        initialize_loggers(log_level, echo_level)
-        log('DAEMON_STARTED', logging.INFO)
+        global current_log_level
+        current_log_level = log_level
+        setup_logging(log_level)
+        pid = os.getpid()
+        log('DAEMON_STARTED', logging.INFO, pid=pid)
         
         log('INITIALIZING_DATABASE', logging.DEBUG)
         init_database()
         log('DATABASE_INITIALIZED', logging.DEBUG)
         
         log('SETTING_UP_TELEGRAM_BOT', logging.DEBUG)
-        telegram_bot = setup_telegram_bot()
+        telegram_bot = setup_telegram_bot(log_level)
         log('TELEGRAM_BOT_SETUP_COMPLETE', logging.INFO)
         
         log('RUNNING_TELEGRAM_BOT', logging.DEBUG)
@@ -162,19 +155,18 @@ def stop_daemon():
         log('DAEMON_STOP_ERROR', logging.ERROR, error=str(e))
         return False
 
-def restart_daemon(log_level=logging.INFO, echo_level=logging.ERROR):
+def restart_daemon(log_level=logging.INFO):
     try:
         stop_daemon()
-        return start_daemon(log_level, echo_level)
+        return start_daemon(log_level)
     except Exception as e:
         log('DAEMON_RESTART_ERROR', logging.CRITICAL, error=str(e))
         raise
 
-def update_log_levels(log_level=logging.INFO, echo_level=logging.ERROR):
+def update_log_levels(log_level=logging.INFO):
     try:
-        global current_log_level, current_echo_level
+        global current_log_level
         current_log_level = log_level
-        current_echo_level = echo_level
 
         pid = is_running()
         if not pid:
@@ -184,20 +176,17 @@ def update_log_levels(log_level=logging.INFO, echo_level=logging.ERROR):
         os.kill(pid, signal.SIGUSR1)
         
         set_log_level(current_log_level)
-        set_console_level(current_echo_level)
+        set_telegram_log_level(current_log_level)
         
-        # Добавьте эту строку
-        save_log_levels(logging.getLevelName(current_log_level), logging.getLevelName(current_echo_level))
-        
-        log('LOG_LEVELS_UPDATED', logging.INFO, log_level=logging.getLevelName(current_log_level), echo_level=logging.getLevelName(current_echo_level))
+        log('LOG_LEVELS_UPDATED', logging.INFO, log_level=logging.getLevelName(current_log_level))
     except Exception as e:
         log('LOG_LEVELS_UPDATE_ERROR', logging.ERROR, error=str(e))
         raise
 
-def manage_daemon(action, log_level=logging.INFO, echo_level=logging.ERROR):
+def manage_daemon(action, log_level=logging.INFO):
     try:
         if action == 'start':
-            result = start_daemon(log_level, echo_level)
+            result = start_daemon(log_level)
             if result:
                 log('DAEMON_START_SUCCESS', logging.INFO)
             else:
@@ -211,7 +200,7 @@ def manage_daemon(action, log_level=logging.INFO, echo_level=logging.ERROR):
         elif action == 'restart':
             stop_daemon()
             time.sleep(2)
-            if start_daemon(log_level, echo_level):
+            if start_daemon(log_level):
                 log('DAEMON_RESTART_SUCCESS', logging.WARNING)
             else:
                 log('DAEMON_RESTART_FAILED', logging.ERROR)
@@ -231,7 +220,6 @@ def get_status():
             return {
                 'pid': pid,
                 'log_level': current_log_level,
-                'echo_level': current_echo_level,
                 'create_time': process.create_time()
             }
     except (FileNotFoundError, ValueError, psutil.NoSuchProcess):
@@ -244,7 +232,6 @@ def get_status():
                 return {
                     'pid': proc.pid,
                     'log_level': current_log_level,
-                    'echo_level': current_echo_level,
                     'create_time': proc.create_time()
                 }
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -274,7 +261,6 @@ def log_service_status():
         log('SERVICE_RUNNING', logging.INFO, 
             pid=status['pid'], 
             log_level=logging.getLevelName(status['log_level']), 
-            echo_level=logging.getLevelName(status['echo_level']), 
             uptime=int(time.time() - status['create_time']))
     else:
         log('SERVICE_NOT_RUNNING', logging.INFO)

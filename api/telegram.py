@@ -8,17 +8,24 @@ from functools import wraps
 from utils.logger import log
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Get the token from the environment variable
 TOKEN = os.getenv('ANYRUN_SB_API_TOKEN')
 
-# Function to determine the user's language
 def get_user_language(user):
     if user.language_code:
         return user.language_code
     return "en"
+
+def set_telegram_log_level(level):
+    logging.getLogger('telegram').setLevel(level)
+    logging.getLogger('telegram.ext').setLevel(level)
+    logging.getLogger('telegram.bot').setLevel(level)
+    logging.getLogger('telegram.network').setLevel(level)
+    logging.getLogger('telegram.utils.request').setLevel(level)
+    logging.getLogger('telegram.error').setLevel(level)
+    logging.getLogger('telegram.ext.Application').setLevel(level)
+    logging.getLogger('httpx').setLevel(level)
 
 def set_language(func):
     @wraps(func)
@@ -31,7 +38,6 @@ def set_language(func):
 @set_language
 async def send_message(update: Update, message_key: str, **kwargs) -> None:
     try:
-        # Send a localized message to the user.
         message = lang_get(message_key)
         await update.message.reply_text(message, **kwargs)
     except Exception as e:
@@ -43,13 +49,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
-        # Here we're not using localization, so we can just reply directly
-       await update.message.reply_text(update.message.text)
-       log('USER_SENT_MESSAGE', logging.DEBUG, user_id=update.effective_user.id, message=update.message.text)
+        await update.message.reply_text(update.message.text)
+        log('USER_SENT_MESSAGE', logging.DEBUG, user_id=update.effective_user.id, message=update.message.text)
     except Exception as e:
         log('ECHO_ERROR', logging.ERROR, error=str(e), user_id=update.effective_user.id, message=update.message.text)
 
-def setup_telegram_bot():
+def setup_telegram_bot(log_level=logging.WARNING):
     if not TOKEN:
         log('BOT_TOKEN_NOT_FOUND', logging.CRITICAL)
         raise EnvironmentError(lang_get('BOT_TOKEN_NOT_FOUND'))
@@ -63,6 +68,8 @@ def setup_telegram_bot():
         application.add_handler(CommandHandler("start", start))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
         log('HANDLERS_ADDED', logging.DEBUG)
+        
+        set_telegram_log_level(log_level)
         
         log('BOT_SETUP_COMPLETE', logging.INFO)
         return application

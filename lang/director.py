@@ -4,7 +4,6 @@ import logging
 from lang.context import get_current_language, set_message_getter
 from utils.logger import log
 
-# Path to the language files
 LANG_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_LANGUAGE = "en"
 
