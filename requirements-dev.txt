@@ -1,0 +1,5 @@
+-r requirements.txt
+pyinstaller==6.10.0
+pyinstaller-hooks-contrib==2024.8
+python-daemon==3.0.1
+setuptools==75.1.0

@@ -1,7 +1,14 @@
 {
-    "WELCOME_MESSAGE": "Welcome to the ANY.RUN Sandbox API for Telegram! Please enter a command or a message.",
-    "HELP_MESSAGE": "Here are the available commands:\n\n/start - Start the bot\n/help - Show this help message\n\nYou can also interact with the bot by sending messages directly to it.",
+    "WELCOME_MESSAGE": "Welcome to the ANY.RUN Sandbox API for Telegram! Please use the menu below or type a command.",
+    "HELP_MESSAGE": "Here are the main options:\n\n• Profile: View and manage your profile\n• Settings: Adjust bot settings\n• Help: Show this help message\n• Language: Change the bot language\n\nYou can also use these commands:\n/start - Show the main menu\n/menu - Show the main menu\n/help - Show this help message\n/language - Update the bot's language",
     "LANGUAGE_UPDATED": "Your language has been updated.",
-    "LANGUAGE_INFO": "If you change your language in Telegram, use /language command to update the bot's language.",
-    "LANGUAGE_UPDATE_ERROR": "An error occurred while updating the language. Please try again later."
+    "LANGUAGE_UPDATE_ERROR": "An error occurred while updating the language. Please try again later.",
+    "MENU_BUTTON_PROFILE": "Profile",
+    "MENU_BUTTON_SETTINGS": "Settings",
+    "MENU_BUTTON_HELP": "Help",
+    "MENU_BUTTON_LANGUAGE": "Change language",
+    "MAIN_MENU_TEXT": "Main Menu - Please select an option:",
+    "PROFILE_INFO": "Here you can view and manage your profile information.",
+    "SETTINGS_INFO": "Here you can adjust various bot settings.",
+    "UNKNOWN_OPTION": "Sorry, I don't recognize that option. Please try again."
 }

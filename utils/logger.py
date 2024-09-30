@@ -4,7 +4,7 @@ from datetime import datetime
 from datetime import timedelta
 
 def setup_logging(config):
-    log_dir = os.path.join(os.path.expanduser('~'), 'arsbtlgbot_logs')
+    log_dir = os.path.join(os.path.expanduser('~'), 'anyrun-tg-bot_logs')
     os.makedirs(log_dir, exist_ok=True)
     
     log_level = config.get_log_level('LOG_LEVEL')
@@ -36,7 +36,7 @@ def setup_logging(config):
     logging.info(f"Logging setup completed. Log file: {log_file}")
 
 def view_logs(lines=50, days=7):
-    log_dir = os.path.join(os.path.expanduser('~'), 'arsbtlgbot_logs')
+    log_dir = os.path.join(os.path.expanduser('~'), 'anyrun-tg-bot_logs')
     log_files = []
     
     for i in range(days):

@@ -23,18 +23,28 @@ For detailed usage instructions and available commands, start a chat with the bo
 
 1. Clone the repository and navigate to the project directory.
 
-2. Install dependencies:
-
+2. Create a virtual environment (recommended):
    ```
-   pip install -r requirements.txt
+   python -m venv sbbotenv
+   source sbbotenv/bin/activate
    ```
 
-3. Set up the environment variables:
+3. Install dependencies:
+   - For production:
+     ```
+     pip install -r requirements.txt
+     ```
+   - For development:
+     ```
+     pip install -r requirements-dev.txt
+     ```
+
+4. Set up the environment variables:
 
    Create a `.env` file in the project root with:
 
    ```
-   TELEGRAM_TOKEN=<your_telegram_token >
+   TELEGRAM_TOKEN=<your_telegram_token>
    TELEGRAM_ADMIN_ID=<your_telegram_admin_id>
    LOG_LEVEL=<your_log_level>
    TELEGRAM_LOG_LEVEL=<your_telegram_log_level>
@@ -42,67 +52,7 @@ For detailed usage instructions and available commands, start a chat with the bo
 
    Note: Make sure to replace the placeholder values with your actual values.
 
-## Setting up the System Service
-
-To run the ANY.RUN Sandbox API for Telegram bot as a system service, follow these steps:
-
-1. Create a service configuration file:
-   ```
-   sudo nano /etc/systemd/system/anyrun-tg-bot.service
-   ```
-
-2. Insert the following content, adapting the paths and user as necessary:
-   ```
-   [Unit]
-   Description=ANY.RUN Sandbox API for Telegram
-   After=network.target
-
-   [Service]
-   ExecStart=/usr/bin/python3 /path/to/your/bot/main.py
-   WorkingDirectory=/path/to/your/bot
-   User=your_username
-   Group=your_group
-   Restart=always
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-
-3. Save the file and exit the editor.
-
-4. Reload systemd:
-   ```
-   sudo systemctl daemon-reload
-   ```
-
-5. Enable the service to start on boot:
-   ```
-   sudo systemctl enable anyrun-tg-bot.service
-   ```
-
-6. Start the service:
-   ```
-   sudo systemctl start anyrun-tg-bot.service
-   ```
-
-7. Check the service status:
-   ```
-   sudo systemctl status anyrun-tg-bot.service
-   ```
-
-The bot will now automatically start on system boot and restart in case of failures.
-
-To view the logs, use the following command:
-```
-journalctl -u anyrun-tg-bot.service
-```
-
-To view the last 50 lines of logs:
-```
-journalctl -u anyrun-tg-bot.service -n 50 --no-pager
-```
-
-## Usage
+## Running the Bot
 
 To run the bot manually, use the following command:
 

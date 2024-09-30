@@ -1,7 +1,14 @@
 {
-    "WELCOME_MESSAGE": "Dobrodošli u ANY.RUN Sandbox API za Telegram! Molim Vas unesite komandu ili poruku.",
-    "HELP_MESSAGE": "Ovdje su dostupne sljedeće komande:\n\n/start - Počni rad s botom\n/help - Prikaži ovu poruku\n\nMožete komunicirati s botom poslatići poruke direktno.",
-    "LANGUAGE_UPDATED": "Vaš je jezik ažuriran.",
-    "LANGUAGE_INFO": "Ako želite ažurirati jezik u Telegram-u, koristite komandu /language.",
-    "LANGUAGE_UPDATE_ERROR": "Došlo je do greške pri ažuriranju jezika. Molim vas pokušajte ponovo kasnije."
+    "WELCOME_MESSAGE": "Dobrodošli u ANY.RUN Sandbox API za Telegram! Molimo koristite meni ispod ili unesite komandu.",
+    "HELP_MESSAGE": "Evo glavnih opcija:\n\n• Profil: Pregled i upravljanje vašim profilom\n• Podešavanja: Prilagodite podešavanja bota\n• Pomoć: Prikaži ovu poruku pomoći\n• Jezik: Promenite jezik bota\n\nTakođe možete koristiti ove komande:\n/start - Prikaži glavni meni\n/menu - Prikaži glavni meni\n/help - Prikaži ovu poruku pomoći\n/language - Ažurirajte jezik bota",
+    "LANGUAGE_UPDATED": "Vaš jezik je ažuriran.",
+    "LANGUAGE_UPDATE_ERROR": "Došlo je do greške pri ažuriranju jezika. Pokušajte ponovo kasnije.",
+    "MENU_BUTTON_PROFILE": "Profil",
+    "MENU_BUTTON_SETTINGS": "Podešavanja",
+    "MENU_BUTTON_HELP": "Pomoć",
+    "MENU_BUTTON_LANGUAGE": "Promeni jezik",
+    "MAIN_MENU_TEXT": "Glavni meni - Molimo izaberite opciju:",
+    "PROFILE_INFO": "Ovde možete pregledati i upravljati informacijama vašeg profila.",
+    "SETTINGS_INFO": "Ovde možete prilagoditi različita podešavanja bota.",
+    "UNKNOWN_OPTION": "Izvinite, ne prepoznajem tu opciju. Molim vas, pokušajte ponovo."
 }

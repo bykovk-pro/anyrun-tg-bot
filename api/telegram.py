@@ -2,11 +2,12 @@ import os
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from lang.context import set_current_language
+from lang.context import set_current_language, get_current_language
 from functools import wraps
 from dotenv import load_dotenv
 from config import create_config
 from lang.director import get as humanize
+from api.menu import show_main_menu, setup_menu_handlers, change_language_command
 
 load_dotenv()
 env_vars = dict(os.environ)
@@ -27,8 +28,10 @@ def setup_telegram_bot():
         
         logging.debug('Adding command handlers')
         application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("language", change_language_command))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-        application.add_handler(CommandHandler("language", update_language))
+        application.add_handler(CommandHandler("menu", show_main_menu))
+        setup_menu_handlers(application)
         logging.debug('Command handlers added successfully')
         
         logging.info('Telegram bot setup completed')
@@ -37,16 +40,12 @@ def setup_telegram_bot():
         logging.error('Error during Telegram bot setup', exc_info=True)
         raise
 
-def get_user_language(user):
-    if user.language_code:
-        return user.language_code
-    return "en"
-
 def set_language(func):
     @wraps(func)
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_language = update.effective_user.language_code
-        set_current_language(user_language if user_language else 'en')
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE = None):
+        user = update.effective_user
+        user_language = user.language_code if user.language_code else 'en'
+        set_current_language(user_language)
         return await func(update, context)
     return wrapper
 
@@ -61,7 +60,7 @@ async def send_message(update: Update, message_key: str, **kwargs) -> None:
 @set_language
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await send_message(update, 'WELCOME_MESSAGE')
-    await send_message(update, 'LANGUAGE_INFO')
+    await show_main_menu(update, context)
     logging.debug(f'User started the bot: user_id={update.effective_user.id}')
 
 @set_language
@@ -71,19 +70,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.debug(f'User sent a message: user_id={update.effective_user.id}, message={update.message.text}')
     except Exception as e:
         logging.error(f'Error in echo handler: {str(e)}, user_id={update.effective_user.id}, message={update.message.text}')
-
-@set_language
-async def update_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    try:
-        user = update.effective_user
-        chat_member = await context.bot.get_chat_member(update.effective_chat.id, user.id)
-        new_language = chat_member.user.language_code or 'en'
-        set_current_language(new_language)
-        await send_message(update, 'LANGUAGE_UPDATED')
-        logging.debug(f'User updated language: user_id={user.id}, new_language={new_language}')
-    except Exception as e:
-        logging.error(f'Error updating language: {str(e)}')
-        await send_message(update, 'LANGUAGE_UPDATE_ERROR')
 
 def run_telegram_bot(application):  
     try:
