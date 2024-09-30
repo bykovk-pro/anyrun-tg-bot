@@ -66,27 +66,6 @@ The bot will start and listen for incoming messages on Telegram.
 
 The bot supports multiple languages. To add or modify localized strings, edit the JSON files in the `lang` directory. Users can change their language using the `/language` command.
 
-## Logging
-
-The bot uses a system logging mechanism. Logs can be viewed using the `journalctl` command:
-
-```
-journalctl -u anyrun-tg-bot.service
-```
-
-To view the last 50 lines of logs:
-```
-journalctl -u anyrun-tg-bot.service -n 50 --no-pager
-```
-
-## Database
-
-The bot uses an SQLite database to store user information and other options. The database file is located at `db/arsbtlgbot.db`.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
