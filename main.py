@@ -6,6 +6,8 @@ from utils.logger import setup_logging, view_logs
 from utils.director import manage_daemon
 from db.director import init_database, check_and_setup_admin
 from config import create_config
+from importlib.metadata import version
+__version__ = version("anyrun-tg-bot")
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Manage the ANY.RUN Sandbox API bot service.')
@@ -24,7 +26,7 @@ def main():
     if args.action in ['start', 'restart']:
         init_database()
         check_and_setup_admin(config)
-        logging.info("Application started")
+        logging.info(f"Application anyrun-tg-bot v.{__version__} started")
 
     if args.action in ['start', 'stop', 'restart', 'kill']:
         manage_daemon(args.action)
