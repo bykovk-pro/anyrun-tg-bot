@@ -1,9 +1,8 @@
 import sqlite3
 import logging
 from db.common import DB_FILE, generate_uuid
-from utils.logger import log
 
-def add_user(telegram_id, is_admin=False):
+def add_user(telegram_id: int, is_admin: bool = False):
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
@@ -14,14 +13,14 @@ def add_user(telegram_id, is_admin=False):
         ''', (user_uuid, telegram_id, is_admin))
         conn.commit()
         conn.close()
-        log('USER_ADDED', logging.INFO, telegram_id=str(telegram_id)[:5] + '...', is_admin=is_admin)
+        logging.info(f'USER_ADDED: telegram_id={telegram_id}, is_admin={is_admin}')
     except sqlite3.IntegrityError:
-        log('USER_ALREADY_EXISTS', logging.WARNING, telegram_id=str(telegram_id)[:5] + '...')
+        logging.warning(f'USER_ALREADY_EXISTS: telegram_id={telegram_id}')
     except Exception as e:
-        log('USER_ADD_ERROR', logging.ERROR, error=str(e), telegram_id=str(telegram_id)[:5] + '...')
+        logging.error(f'USER_ADD_ERROR: telegram_id={telegram_id}', exc_info=True)
         raise
 
-def get_user_by_telegram_id(telegram_id):
+def get_user_by_telegram_id(telegram_id: int):
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -46,7 +45,7 @@ def get_admins():
     cursor.execute('''
         SELECT *
         FROM users
-        WHERE is_admin = TRUE AND is_deleted = FALSE
+        WHERE is_admin = 1 AND is_deleted = 0
     ''')
 
     admins = [dict(row) for row in cursor.fetchall()]

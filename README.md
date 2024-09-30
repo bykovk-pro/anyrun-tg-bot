@@ -8,7 +8,7 @@ This Telegram bot provides a simple interface to interact with the ANY.RUN Sandb
 - Retrieve analysis results and reports
 - Check the status of ongoing analyses
 - Manage API keys within the Telegram interface
-- Multi-language support for a global user base
+- Multi-language support with dynamic language switching
 - Flexible logging system with adjustable log levels
 
 This bot simplifies the process of using ANY.RUN's powerful malware analysis capabilities, making it accessible directly from your Telegram client. It's designed for security researchers, malware analysts, and IT professionals who need quick and easy access to sandbox analysis results.
@@ -21,19 +21,7 @@ For detailed usage instructions and available commands, start a chat with the bo
 
 ## Setup
 
-1. Set the environment variables:
-
-   ```
-   export ANYRUN_SB_API_TOKEN=your_token_here
-   export ANYRUN_SB_ADMIN_ID=your_telegram_id_here
-   ```
-
-   Or create a `.env` file in the project root with:
-
-   ```
-   ANYRUN_SB_API_TOKEN=your_token_here
-   ANYRUN_SB_ADMIN_ID=your_telegram_id_here
-   ```
+1. Clone the repository and navigate to the project directory.
 
 2. Install dependencies:
 
@@ -41,35 +29,105 @@ For detailed usage instructions and available commands, start a chat with the bo
    pip install -r requirements.txt
    ```
 
-3. Add language files:
-   Create JSON files in the `lang` directory for each supported language (e.g., `en.json`, `ru.json`, `sr.json`, `sr-Latn.json`).
+3. Set up the environment variables:
+
+   Create a `.env` file in the project root with:
+
+   ```
+   TELEGRAM_TOKEN=<your_telegram_token >
+   TELEGRAM_ADMIN_ID=<your_telegram_admin_id>
+   LOG_LEVEL=<your_log_level>
+   TELEGRAM_LOG_LEVEL=<your_telegram_log_level>
+   ```
+
+   Note: Make sure to replace the placeholder values with your actual values.
+
+## Setting up the System Service
+
+To run the ANY.RUN Sandbox API for Telegram bot as a system service, follow these steps:
+
+1. Create a service configuration file:
+   ```
+   sudo nano /etc/systemd/system/anyrun-tg-bot.service
+   ```
+
+2. Insert the following content, adapting the paths and user as necessary:
+   ```
+   [Unit]
+   Description=ANY.RUN Sandbox API for Telegram
+   After=network.target
+
+   [Service]
+   ExecStart=/usr/bin/python3 /path/to/your/bot/main.py
+   WorkingDirectory=/path/to/your/bot
+   User=your_username
+   Group=your_group
+   Restart=always
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. Save the file and exit the editor.
+
+4. Reload systemd:
+   ```
+   sudo systemctl daemon-reload
+   ```
+
+5. Enable the service to start on boot:
+   ```
+   sudo systemctl enable anyrun-tg-bot.service
+   ```
+
+6. Start the service:
+   ```
+   sudo systemctl start anyrun-tg-bot.service
+   ```
+
+7. Check the service status:
+   ```
+   sudo systemctl status anyrun-tg-bot.service
+   ```
+
+The bot will now automatically start on system boot and restart in case of failures.
+
+To view the logs, use the following command:
+```
+journalctl -u anyrun-tg-bot.service
+```
+
+To view the last 50 lines of logs:
+```
+journalctl -u anyrun-tg-bot.service -n 50 --no-pager
+```
 
 ## Usage
 
-Control the bot service with the following commands:
+To run the bot manually, use the following command:
 
-- Start: `python main.py start [--log LEVEL]`
-- Stop: `python main.py stop`
-- Restart: `python main.py restart [--log LEVEL]`
-- Check status: `python main.py status`
-- Kill all instances: `python main.py kill_all`
-- View logs: `python main.py logs [--lines NUMBER]`
-
-Log levels can be set to: DEBUG, INFO, WARNING, ERROR, CRITICAL.
-
-Examples:
 ```
-python main.py start --log INFO
-python main.py logs --lines 100
+python main.py
 ```
+
+The bot will start and listen for incoming messages on Telegram.
 
 ## Localization
 
-To add or modify localized strings, edit the corresponding JSON files in the `lang` directory.
+The bot supports multiple languages. To add or modify localized strings, edit the JSON files in the `lang` directory. Users can change their language using the `/language` command.
 
 ## Logging
 
-The bot uses a flexible logging system. Log files are automatically created daily with the format `YYYYMMDD.log` in the user's home directory under `arsbtlgbot_logs/`.
+The bot uses a system logging mechanism. Logs can be viewed using the `journalctl` command:
+
+```
+journalctl -u anyrun-tg-bot.service
+```
+
+To view the last 50 lines of logs:
+```
+journalctl -u anyrun-tg-bot.service -n 50 --no-pager
+```
 
 ## Database
 

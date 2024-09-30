@@ -1,6 +1,6 @@
 import sqlite3
 from db.common import DB_FILE, generate_uuid
-from utils.logger import log
+
 
 def add_api_key(user_uuid, api_key, key_name='API Key', is_active=False, is_deleted=False):
     conn = sqlite3.connect(DB_FILE)
