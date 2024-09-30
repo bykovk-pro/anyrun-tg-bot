@@ -6,8 +6,13 @@ from utils.logger import setup_logging, view_logs
 from utils.director import manage_daemon
 from db.director import init_database, check_and_setup_admin
 from config import create_config
-from importlib.metadata import version
-__version__ = version("anyrun-tg-bot")
+from setuptools_scm import get_version
+
+try:
+    __version__ = get_version(root='.')
+except Exception as e:
+    logging.warning(f"Unable to determine version: {e}")
+    __version__ = "unknown"
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Manage the ANY.RUN Sandbox API bot service.')

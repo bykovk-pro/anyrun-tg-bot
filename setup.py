@@ -1,12 +1,11 @@
 from setuptools import setup, find_packages
-from version import __version__
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name="anyrun-tg-bot",
-    use_scm_version={"version_scheme": "post-release"},
+    use_scm_version=True,
     setup_requires=['setuptools_scm'],
     author="Kirill Bykov",
     author_email="me@bykovk.pro",
