@@ -1,16 +1,17 @@
 import os
-import sys
-import signal
 import logging
 from functools import wraps
 from dotenv import load_dotenv
 from config import create_config
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 from telegram.error import Conflict
 from lang.context import set_current_language
 from lang.director import get as humanize
-from api.menu import show_main_menu, setup_menu_handlers, change_language_command
+from api.security import setup_telegram_security, check_bot_in_groups
+from api.menu import *
+from db.users import get_non_admin_users, update_user_ban_status
+from db.director import init_database, backup_database as create_db_backup
 
 load_dotenv()
 env_vars = dict(os.environ)
@@ -18,30 +19,6 @@ config = create_config(env_vars)
 
 TOKEN = config.get('TELEGRAM_TOKEN')
 TELEGRAM_LOG_LEVEL = config.get_log_level('TELEGRAM_LOG_LEVEL')
-
-def setup_telegram_bot():
-    if not TOKEN:
-        logging.critical('Telegram bot token not found in environment variables')
-        raise EnvironmentError('Telegram bot token not found in environment variables')
-    
-    try:
-        logging.debug(f'Building Telegram application with token: {TOKEN[:5]}...')
-        application = Application.builder().token(TOKEN).build()
-        logging.debug('Telegram application built successfully')
-        
-        logging.debug('Adding command handlers')
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(CommandHandler("language", change_language_command))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-        application.add_handler(CommandHandler("menu", show_main_menu))
-        setup_menu_handlers(application)
-        logging.debug('Command handlers added successfully')
-        
-        logging.info('Telegram bot setup completed')
-        return application
-    except Exception as e:
-        logging.error('Error during Telegram bot setup', exc_info=True)
-        raise
 
 def set_language(func):
     @wraps(func)
@@ -52,17 +29,34 @@ def set_language(func):
         return await func(update, context)
     return wrapper
 
-@set_language
-async def send_message(update: Update, message_key: str, **kwargs) -> None:
+async def setup_telegram_bot():
     try:
-        message = humanize(message_key)
-        await update.message.reply_text(message, **kwargs)
+        await init_database()
+        TOKEN = setup_telegram_security()
+        
+        logging.debug(f'Building Telegram application with token: {TOKEN[:5]}...')
+        application = Application.builder().token(TOKEN).build()
+        logging.debug('Telegram application built successfully')
+        
+        logging.debug('Adding command handlers')
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+        application.add_handler(CommandHandler("menu", show_main_menu))
+        setup_menu_handlers(application)
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_selection))
+        application.add_handler(CallbackQueryHandler(handle_user_action, pattern='^(ban_users|unban_users|do_nothing)$'))
+        logging.debug('Command handlers added successfully')
+        
+        logging.info('Telegram bot setup completed')
+        return application
     except Exception as e:
-        logging.error(f'Error sending message: {str(e)}, message_key: {message_key}')
+        logging.error('Error during Telegram bot setup', exc_info=True)
+        raise
 
 @set_language
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await send_message(update, 'WELCOME_MESSAGE')
+    welcome_message = humanize("WELCOME_MESSAGE")
+    await update.message.reply_text(welcome_message)
     await show_main_menu(update, context)
     logging.debug(f'User started the bot: user_id={update.effective_user.id}')
 
@@ -74,19 +68,87 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logging.error(f'Error in echo handler: {str(e)}, user_id={update.effective_user.id}, message={update.message.text}')
 
-def signal_handler(signum, frame):
-    print("Received signal to terminate. Stopping bot...")
-    sys.exit(0)
+@set_language
+async def check_bot_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    bot_groups_check = await check_bot_in_groups(context.bot)
+    if bot_groups_check is True:
+        await update.callback_query.message.reply_text(humanize("BOT_IN_ALL_GROUPS"))
+    else:
+        missing_groups = ', '.join(map(str, bot_groups_check))
+        await update.callback_query.message.reply_text(humanize("BOT_MISSING_GROUPS").format(groups=missing_groups))
+    await show_admin_menu(update, context)
 
-def run_telegram_bot(bot):
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-    
+@set_language
+async def manage_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    users = await get_non_admin_users()
+    user_list = '\n'.join([f"{user['telegram_id']} - {user['first_access_date']} - {user['last_access_date']} - {'Banned' if user['is_banned'] else 'Not banned'}" for user in users])
+    await update.callback_query.message.reply_text(humanize("USER_LIST") + '\n' + user_list)
+    await update.callback_query.message.reply_text(humanize("SELECT_USERS_TO_MANAGE"))
+    context.user_data['awaiting_user_selection'] = True
+
+@set_language
+async def handle_user_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if 'awaiting_user_selection' not in context.user_data or not context.user_data['awaiting_user_selection']:
+        return
+
+    selected_users = update.message.text.split(',')
+    valid_users = []
+    invalid_users = []
+
+    for user_id in selected_users:
+        try:
+            user_id = int(user_id.strip())
+            if any(user['telegram_id'] == user_id for user in await get_non_admin_users()):
+                valid_users.append(user_id)
+            else:
+                invalid_users.append(user_id)
+        except ValueError:
+            invalid_users.append(user_id)
+
+    if invalid_users:
+        await update.message.reply_text(humanize("INVALID_USER_IDS").format(users=', '.join(map(str, invalid_users))))
+        return
+
+    keyboard = [
+        [InlineKeyboardButton(humanize("BAN_USERS"), callback_data='ban_users')],
+        [InlineKeyboardButton(humanize("UNBAN_USERS"), callback_data='unban_users')],
+        [InlineKeyboardButton(humanize("DO_NOTHING"), callback_data='do_nothing')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(humanize("CHOOSE_ACTION"), reply_markup=reply_markup)
+    context.user_data['selected_users'] = valid_users
+    context.user_data['awaiting_user_selection'] = False
+
+@set_language
+async def handle_user_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    action = query.data
+    selected_users = context.user_data.get('selected_users', [])
+
+    if action == 'ban_users':
+        for user_id in selected_users:
+            await update_user_ban_status(user_id, True)
+        await query.message.reply_text(humanize("USERS_BANNED"))
+    elif action == 'unban_users':
+        for user_id in selected_users:
+            await update_user_ban_status(user_id, False)
+        await query.message.reply_text(humanize("USERS_UNBANNED"))
+    elif action == 'do_nothing':
+        await query.message.reply_text(humanize("NO_ACTION_TAKEN"))
+
+    await show_admin_menu(update, context)
+
+@set_language
+async def backup_database(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        bot.run_polling(allowed_updates=Update.ALL_TYPES)
-    except Conflict:
-        logging.error("Another instance of the bot is already running. Please stop it before starting a new one.")
-        sys.exit(1)
+        backup_file = await create_db_backup()
+        with open(backup_file, 'rb') as file:
+            await update.callback_query.message.reply_document(document=file, filename='database_backup.zip')
+        await update.callback_query.message.reply_text(humanize("BACKUP_CREATED"))
     except Exception as e:
-        logging.error(f"An error occurred while running the bot: {e}")
-        sys.exit(1)
+        logging.error(f"Error creating database backup: {str(e)}")
+        await update.callback_query.message.reply_text(humanize("BACKUP_ERROR"))
+    
+    await show_admin_menu(update, context)
