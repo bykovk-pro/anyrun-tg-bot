@@ -2,6 +2,7 @@ import os
 import psutil
 import logging
 import tempfile
+import pyzipper
 from api.telegram import setup_telegram_bot, run_telegram_bot
 from db.director import init_database
 
@@ -68,3 +69,8 @@ async def cleanup_pid_file():
         except (ValueError, IOError):
             os.remove(PID_FILE)
             logging.info("Removed invalid PID file")
+
+def create_encrypted_zip(file_path, zip_path, password):
+    with pyzipper.AESZipFile(zip_path, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
+        zf.setpassword(password.encode())
+        zf.write(file_path, os.path.basename(file_path))

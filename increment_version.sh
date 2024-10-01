@@ -35,8 +35,4 @@ new_version="$major.$minor.$patch"
 # Write new version to file
 echo $new_version > version.txt
 
-# Add changes to Git
-git add version.txt
-git commit -m "Bump version to $new_version"
-
 echo "Version bumped to $new_version"

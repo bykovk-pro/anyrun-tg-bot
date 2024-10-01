@@ -1,7 +1,7 @@
 import os
 import datetime 
 import logging
-import pyminizip
+import pyzipper
 from dotenv import load_dotenv
 from db.common import get_db_pool, DB_FILE
 from db.users import add_user
@@ -55,7 +55,9 @@ async def backup_database():
         if not password:
             raise ValueError("DB_PASSWORD not set in environment variables")
         
-        pyminizip.compress(DB_FILE, None, backup_path, password, compression_level)
+        with pyzipper.AESZipFile(backup_path, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
+            zf.setpassword(password.encode())
+            zf.write(DB_FILE, os.path.basename(DB_FILE))
         
         return backup_path
     except Exception as e:
