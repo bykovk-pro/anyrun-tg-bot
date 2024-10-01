@@ -1,23 +1,42 @@
 #!/bin/bash
 
-# Чтение текущей версии
+# Read current version
 version=$(cat version.txt)
 
-# Разбиение версии на компоненты
+# Split version into components
 IFS='.' read -ra ADDR <<< "$version"
 major="${ADDR[0]}"
 minor="${ADDR[1]}"
 patch="${ADDR[2]}"
 
-# Инкрементирование patch версии
-patch=$((patch + 1))
+# Increment version based on the argument
+case "$1" in
+  major)
+    major=$((major + 1))
+    minor=0
+    patch=0
+    ;;
+  minor)
+    minor=$((minor + 1))
+    patch=0
+    ;;
+  patch)
+    patch=$((patch + 1))
+    ;;
+  *)
+    echo "Invalid argument. Use 'major', 'minor', or 'patch'."
+    exit 1
+    ;;
+esac
 
-# Сборка новой версии
+# Assemble new version
 new_version="$major.$minor.$patch"
 
-# Запись новой версии в файл
+# Write new version to file
 echo $new_version > version.txt
 
-# Добавление изменений в Git
+# Add changes to Git
 git add version.txt
 git commit -m "Bump version to $new_version"
+
+echo "Version bumped to $new_version"

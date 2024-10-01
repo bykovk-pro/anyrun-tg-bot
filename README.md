@@ -34,10 +34,6 @@ For detailed usage instructions and available commands, start a chat with the bo
    ```
    pip install .
    ```
-   For development, use:
-   ```
-   pip install -e .[dev]
-   ```
 
 4. Set up the environment variables:
 
