@@ -1,96 +1,96 @@
-import sqlite3
-import logging
-from db.common import DB_FILE, generate_uuid
+from db.common import get_db_pool, generate_uuid
 
-def add_user(telegram_id: int, is_admin: bool = False):
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        user_uuid = generate_uuid()
-        cursor.execute('''
-            INSERT INTO users (user_uuid, telegram_id, first_access_date, is_admin)
-            VALUES (?, ?, datetime('now'), ?)
-        ''', (user_uuid, telegram_id, is_admin))
-        conn.commit()
-        conn.close()
-        logging.info(f'USER_ADDED: telegram_id={telegram_id}, is_admin={is_admin}')
-    except sqlite3.IntegrityError:
-        logging.warning(f'USER_ALREADY_EXISTS: telegram_id={telegram_id}')
-    except Exception as e:
-        logging.error(f'USER_ADD_ERROR: telegram_id={telegram_id}', exc_info=True)
-        raise
+async def add_user(telegram_id, is_admin=False):
+    user_uuid = generate_uuid()
+    db = await get_db_pool()
+    await db.execute('''
+        INSERT OR IGNORE INTO users (user_uuid, telegram_id, is_admin)
+        VALUES (?, ?, ?)
+    ''', (user_uuid, telegram_id, is_admin))
+    await db.commit()
+    return user_uuid
 
-def get_user_by_telegram_id(telegram_id: int):
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    cursor.execute('''
+async def get_user_by_telegram_id(telegram_id: int):
+    db = await get_db_pool()
+    async with db.execute('''
         SELECT *
-        FROM users
-        WHERE telegram_id = ?
-        LIMIT 1
-    ''', (int(telegram_id),))
-
-    user = cursor.fetchone()
-    conn.close()
-
+            FROM users
+            WHERE telegram_id = ?
+            LIMIT 1
+        ''', (int(telegram_id),)) as cursor:
+        user = await cursor.fetchone()
+    
     return dict(user) if user else None
 
-def get_admins():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    cursor.execute('''
+async def get_admins():
+    db = await get_db_pool()
+    async with db.execute('''
         SELECT *
-        FROM users
-        WHERE is_admin = 1 AND is_deleted = 0
-    ''')
-
-    admins = [dict(row) for row in cursor.fetchall()]
-    conn.close()
-
-    return admins
-
-def update_user_admin_status(user_uuid, is_admin):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
+            FROM users
+            WHERE is_admin = 1 AND is_deleted = 0
+        ''') as cursor:
+        admins = await cursor.fetchall()
     
-    cursor.execute('''
+    return [dict(admin) for admin in admins]
+
+async def update_user_admin_status(user_uuid, is_admin):
+    db = await get_db_pool()
+    await db.execute('''
         UPDATE users
-        SET is_admin = ?
-        WHERE user_uuid = ?
+            SET is_admin = ?
+            WHERE user_uuid = ?
     ''', (is_admin, user_uuid))
+    await db.commit()
 
-    conn.commit()
-    conn.close()
-
-def delete_user(user_uuid):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
+async def delete_user(user_uuid):
+    db = await get_db_pool()
+    await db.execute('''
         UPDATE users
-        SET is_deleted = TRUE
-        WHERE user_uuid = ?
+            SET is_deleted = TRUE
+            WHERE user_uuid = ?
     ''', (user_uuid,))
+    await db.commit()
 
-    conn.commit()
-    conn.close()
-
-def get_user_uuid(telegram_id):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
+async def get_user_uuid(telegram_id):
+    db = await get_db_pool()
+    async with db.execute('''
         SELECT user_uuid
         FROM users
-        WHERE telegram_id = ?
-        LIMIT 1
-    ''', (telegram_id,))
-
-    result = cursor.fetchone()
-    conn.close()
-
+            WHERE telegram_id = ?
+            LIMIT 1
+        ''', (telegram_id,)) as cursor:
+        result = await cursor.fetchone()
+    
     return result[0] if result else None
+
+async def is_user_admin(telegram_id: int):
+    db = await get_db_pool()
+    async with db.execute('''
+        SELECT is_admin
+            FROM users
+            WHERE telegram_id = ? AND is_deleted = 0
+            LIMIT 1
+        ''', (telegram_id,)) as cursor:
+            result = await cursor.fetchone()
+    
+    return result[0] if result else False
+
+async def get_non_admin_users():
+    db = await get_db_pool()
+    async with db.execute('''
+        SELECT telegram_id, first_access_date, last_access_date, is_banned
+            FROM users
+            WHERE is_deleted = 0 AND is_admin = 0
+        ''') as cursor:
+        users = await cursor.fetchall()
+    
+    return [dict(user) for user in users]
+
+async def update_user_ban_status(telegram_id: int, is_banned: bool):
+    db = await get_db_pool()
+    await db.execute('''
+        UPDATE users
+            SET is_banned = ?
+            WHERE telegram_id = ?
+    ''', (is_banned, telegram_id))
+    await db.commit()
