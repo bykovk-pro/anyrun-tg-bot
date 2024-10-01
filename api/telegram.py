@@ -1,11 +1,14 @@
 import os
+import sys
+import signal
 import logging
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from lang.context import set_current_language, get_current_language
 from functools import wraps
 from dotenv import load_dotenv
 from config import create_config
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.error import Conflict
+from lang.context import set_current_language
 from lang.director import get as humanize
 from api.menu import show_main_menu, setup_menu_handlers, change_language_command
 
@@ -71,13 +74,19 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logging.error(f'Error in echo handler: {str(e)}, user_id={update.effective_user.id}, message={update.message.text}')
 
-def run_telegram_bot(application):  
+def signal_handler(signum, frame):
+    print("Received signal to terminate. Stopping bot...")
+    sys.exit(0)
+
+def run_telegram_bot(bot):
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
     try:
-        logging.info('Starting Telegram bot')
-        logging.debug('Starting polling')
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
-        logging.info('Polling started successfully')
+        bot.run_polling(allowed_updates=Update.ALL_TYPES)
+    except Conflict:
+        logging.error("Another instance of the bot is already running. Please stop it before starting a new one.")
+        sys.exit(1)
     except Exception as e:
-        logging.critical(f'Error running Telegram bot: {str(e)}')
-        logging.debug('Telegram bot run error traceback', exc_info=True)
-        raise
+        logging.error(f"An error occurred while running the bot: {e}")
+        sys.exit(1)

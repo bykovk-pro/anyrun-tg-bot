@@ -108,7 +108,7 @@ def reinitialize_database():
 
 def backup_database():
     timestamp = int(time.time())
-    backup_file = os.path.join(os.path.dirname(__file__), f'arsbtlgbot_{timestamp}.zip')
+    backup_file = os.path.join(os.path.dirname(__file__), f'anyrun-tg-bot_{timestamp}.zip')
 
     with zipfile.ZipFile(backup_file, 'w') as zipf:
         zipf.write(DB_FILE, os.path.basename(DB_FILE))

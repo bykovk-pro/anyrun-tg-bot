@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from dotenv import load_dotenv
 import argparse
@@ -6,12 +7,11 @@ from utils.logger import setup_logging, view_logs
 from utils.director import manage_daemon
 from db.director import init_database, check_and_setup_admin
 from config import create_config
-from setuptools_scm import get_version
+from importlib.metadata import version, PackageNotFoundError
 
 try:
-    __version__ = get_version(root='.')
-except Exception as e:
-    logging.warning(f"Unable to determine version: {e}")
+    __version__ = version("anyrun-tg-bot")
+except PackageNotFoundError:
     __version__ = "unknown"
 
 def parse_args():
@@ -28,15 +28,19 @@ def main():
 
     args = parse_args()
 
-    if args.action in ['start', 'restart']:
-        init_database()
-        check_and_setup_admin(config)
-        logging.info(f"Application anyrun-tg-bot v.{__version__} started")
+    try:
+        if args.action in ['start', 'restart']:
+            init_database()
+            check_and_setup_admin(config)
+            logging.info(f"Application anyrun-tg-bot v.{__version__} started")
 
-    if args.action in ['start', 'stop', 'restart', 'kill']:
-        manage_daemon(args.action)
-    elif args.action == 'logs':
-        print(view_logs(args.lines))
+        if args.action in ['start', 'stop', 'restart', 'kill']:
+            manage_daemon(args.action)
+        elif args.action == 'logs':
+            print(view_logs(args.lines))
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
