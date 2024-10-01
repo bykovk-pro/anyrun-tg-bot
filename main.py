@@ -9,10 +9,8 @@ from db.director import init_database, check_and_setup_admin
 from config import create_config
 from importlib.metadata import version, PackageNotFoundError
 
-try:
-    __version__ = version("anyrun-tg-bot")
-except PackageNotFoundError:
-    __version__ = "unknown"
+with open("version.txt", "r") as f:
+    __version__ = f.read().strip()
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Manage the ANY.RUN Sandbox API bot service.')
@@ -32,7 +30,7 @@ def main():
         if args.action in ['start', 'restart']:
             init_database()
             check_and_setup_admin(config)
-            logging.info(f"Application anyrun-tg-bot v.{__version__} started")
+            logging.info(f"Application anyrun-tg-bot {__version__} started")
 
         if args.action in ['start', 'stop', 'restart', 'kill']:
             manage_daemon(args.action)
