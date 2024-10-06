@@ -4,7 +4,7 @@ import logging
 import tempfile
 import asyncio
 from src.db.director import init_database, check_and_setup_admin
-from src.api.telegram import setup_telegram_bot
+from src.api.telegram import setup_telegram_bot  # Добавим этот импорт обратно
 
 PID_FILE = os.path.join(tempfile.gettempdir(), 'anyrun-tg-bot.pid')
 SERVICE_NAME = 'anyrun-tg-bot.service'
@@ -50,6 +50,8 @@ async def run(config):
     with open(PID_FILE, 'w') as f:
         f.write(str(os.getpid()))
     
+    os.environ[BOT_ENV_VAR] = '1'  # Set the environment variable
+    
     try:
         application = await initialize_application(config)
         await application.initialize()
@@ -63,6 +65,7 @@ async def run(config):
     finally:
         if os.path.exists(PID_FILE):
             os.remove(PID_FILE)
+        os.environ.pop(BOT_ENV_VAR, None)  # Remove the environment variable
 
 async def get_status():
     try:
@@ -136,8 +139,8 @@ def is_our_bot_process(proc):
         if BOT_SCRIPT_NAME not in cmdline:
             return False
         
-        # Check environment variables
-        if BOT_ENV_VAR not in proc.environ():
+        # Exclude processes running with 'logs' command
+        if 'logs' in cmdline:
             return False
         
         return True
@@ -162,7 +165,7 @@ def kill_bot(config):
             logging.warning(f"Failed to terminate process from PID file")
     
     # Then, search for other possible bot processes
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'environ']):
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
             if is_our_bot_process(proc):
                 proc.terminate()

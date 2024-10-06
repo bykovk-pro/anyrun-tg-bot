@@ -1,12 +1,12 @@
 import logging
 from telegram import Update, User
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.error import BadRequest, TelegramError
 from src.lang.context import set_user_language_getter, set_language_for_user
 from src.lang.director import humanize
 from src.api.security import setup_telegram_security, check_in_groups
 from src.api.menu import setup_menu_handlers, show_main_menu, create_main_menu
 from src.api.sandbox import run_url_analysis
-from src.db.director import backup
 
 def get_user_language(user: User) -> str:
     return user.language_code if user.language_code else 'en'
@@ -41,6 +41,7 @@ async def setup_telegram_bot(config):
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         application.add_handler(CommandHandler("menu", show_main_menu))
         setup_menu_handlers(application)
+        application.add_error_handler(handle_telegram_error)
         logging.debug('Command handlers added successfully')
         
         logging.info('Telegram bot setup completed')
@@ -73,15 +74,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     set_language_for_user(update.effective_user)
 
-async def backup_database(update: Update, context: ContextTypes.DEFAULT_TYPE, config):
-    try:
-        backup_file = await backup(config)
-        with open(backup_file, 'rb') as file:
-            await update.callback_query.message.reply_document(document=file, filename='database_backup.zip')
-        await update.callback_query.message.reply_text(humanize("BACKUP_CREATED"))
-    except Exception as e:
-        logging.error(f"Error creating database backup: {str(e)}")
-        await update.callback_query.message.reply_text(humanize("BACKUP_ERROR"))
-
-    from api.admin import show_admin_panel
-    await show_admin_panel(update, context)
+async def handle_telegram_error(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    error = context.error
+    if isinstance(error, BadRequest):
+        if "Query is too old" in str(error):
+            await update.effective_message.reply_text(humanize("QUERY_EXPIRED"))
+            await show_main_menu(update, context)
+        else:
+            logging.error(f"BadRequest error: {error}")
+    elif isinstance(error, TelegramError):
+        logging.error(f"TelegramError: {error}")
+    else:
+        logging.error(f"Unexpected error: {error}")
