@@ -1,0 +1,116 @@
+# Виртуальное окружение
+venv/
+.venv/
+env/
+.env
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Файлы IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Файлы операционной системы
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
+
+# Файлы базы данных
+*.db
+*.sqlite3
+
+# Временные файлы
+*.tmp
+
+# Файлы с конфиденциальной информацией
+config.ini
+secrets.json
+
+# Файлы сборки
+build/
+dist/
+*.egg-info/
+
+# Файлы тестового покрытия
+.coverage
+htmlcov/
+
+# Файлы документации
+docs/_build/
+
+# Файлы Jupyter Notebook
+.ipynb_checkpoints
+
+# Файлы pyenv
+.python-version
+
+# Файлы pipenv
+Pipfile.lock
+
+# Файлы poetry
+poetry.lock
+
+# Файлы mypy
+.mypy_cache/
+
+# Файлы pytest
+.pytest_cache/
+
+# Файлы Sphinx
+docs/_build/
+
+# Файлы PyInstaller
+*.manifest
+*.spec
+
+# Файлы Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Файлы SageMath
+*.sage.py
+
+# Файлы Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Файлы Spyder project settings
+.spyderproject
+.spyproject
+
+# Файлы Rope project settings
+.ropeproject
+
+# Файлы mkdocs documentation
+/site
+
+# Файлы mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Файлы Pyre type checker
+.pyre/
+
+# Файлы pytype static type analyzer
+.pytype/
+
+# Файлы Cython debug symbols
+cython_debug/
+
+# Специфичные для вашего проекта файлы и директории
+backups/*.zip
+!backups/.gitkeep
+!logs/.gitkeep
