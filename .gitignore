@@ -1,5 +1,6 @@
 backups/
 logs/
+docs/telegram_menu.md
 docs/
 venv/
 .venv/
