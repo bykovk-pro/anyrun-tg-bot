@@ -2,6 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
 
+
 def create_admin_panel_menu():
     keyboard = [
         [InlineKeyboardButton(humanize("MENU_BUTTON_CHECK_BOT_GROUPS"), callback_data='check_bot_groups')],
@@ -29,6 +30,7 @@ def create_manage_bot_menu():
         [InlineKeyboardButton(humanize("MENU_BUTTON_SHOW_BOT_STATS"), callback_data='show_bot_stats')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_SHOW_SYSTEM_INFO"), callback_data='show_system_info')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_BACKUP_DATABASE"), callback_data='backup_database')],
+        [InlineKeyboardButton(humanize("MENU_BUTTON_RESTORE_DATABASE"), callback_data='restore_database')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='admin_panel')]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -48,4 +50,6 @@ async def show_manage_bot_menu(update: Update, context: ContextTypes.DEFAULT_TYP
     reply_markup = create_manage_bot_menu()
     await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
 
-# Здесь нужно добавить реализацию остальных функций админ-панели
+async def check_bot_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pass
+

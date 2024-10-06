@@ -8,6 +8,9 @@ from src.utils.logger import setup_logging, view_logs
 from src.utils.director import run, stop_bot, kill_bot
 from src.db.common import get_db_pool
 
+# Загружаем переменные окружения из .env файла
+load_dotenv()
+
 with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.txt"), "r") as f:
     __version__ = f.read().strip()
 

@@ -4,10 +4,16 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, CallbackQueryHandler, CommandHandler, Application
 from src.lang.director import humanize
 from src.db.users import is_user_admin
-from src.api.sandbox import run_url_analysis, run_file_analysis, get_report, show_history, show_api_limits
+from src.api.sandbox import run_url_analysis, run_file_analysis, show_history, show_api_limits
 from src.api.settings import manage_api_key, change_language, check_access_rights, wipe_user_data
-from src.api.admin import show_admin_panel
+from src.api.admin import show_manage_bot_menu, show_manage_users_menu, show_admin_panel
+from src.api.bot import (
+    restart_bot, change_log_level, show_bot_logs,
+    show_bot_stats, show_system_info, backup_database, restore_database,
+    confirm_restart_bot, set_log_level
+)
 from src.api.help import show_help_menu
+from src.api.users import show_all_users, process_user_action
 
 def create_main_menu():
     keyboard = [
@@ -21,7 +27,6 @@ def create_sandbox_api_menu():
     keyboard = [
         [InlineKeyboardButton(humanize("MENU_BUTTON_RUN_URL_ANALYSIS"), callback_data='run_url_analysis')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_RUN_FILE_ANALYSIS"), callback_data='run_file_analysis')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_GET_REPORT"), callback_data='get_report')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_HISTORY"), callback_data='history')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_SHOW_API_LIMITS"), callback_data='show_api_limits')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='main_menu')]
@@ -72,7 +77,6 @@ async def handle_menu_selection(update: Update, context: ContextTypes.DEFAULT_TY
         'help': show_help_menu,
         'run_url_analysis': run_url_analysis,
         'run_file_analysis': run_file_analysis,
-        'get_report': get_report,
         'history': show_history,
         'show_api_limits': show_api_limits,
         'manage_api_key': manage_api_key,
@@ -80,16 +84,32 @@ async def handle_menu_selection(update: Update, context: ContextTypes.DEFAULT_TY
         'check_access_rights': check_access_rights,
         'wipe_data': wipe_user_data,
         'admin_panel': show_admin_panel,
+        'manage_users': show_manage_users_menu,
+        'manage_bot': show_manage_bot_menu,
+        'restart_bot': restart_bot,
+        'confirm_restart_bot': confirm_restart_bot,
+        'change_log_level': change_log_level,
+        'show_bot_logs': show_bot_logs,
+        'show_bot_stats': show_bot_stats,
+        'show_system_info': show_system_info,
+        'backup_database': backup_database,
+        'restore_database': restore_database,
     }
 
     handler = handlers.get(query.data)
     if handler:
         await handler(update, context)
     else:
-        logging.warning(f"Unknown callback data: {query.data}")
-        await query.edit_message_text(humanize("UNKNOWN_OPTION"))
-        await asyncio.sleep(2)
-        await show_main_menu(update, context)
+        if query.data.startswith('set_log_level_'):
+            await set_log_level(update, context)
+        elif query.data.startswith('show_users_page_'):
+            page = int(query.data.split('_')[-1])
+            await show_all_users(update, context, page)
+        else:
+            logging.warning(f"Unknown callback data: {query.data}")
+            await query.edit_message_text(humanize("UNKNOWN_OPTION"))
+            await asyncio.sleep(2)
+            await show_main_menu(update, context)
 
 def setup_menu_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(handle_menu_selection))

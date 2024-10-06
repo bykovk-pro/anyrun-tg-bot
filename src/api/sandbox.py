@@ -18,10 +18,6 @@ async def run_file_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Реализация анализа файла
     pass
 
-async def get_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Реализация получения отчета
-    pass
-
 async def show_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu_text = humanize("HISTORY_MENU_TEXT")
     reply_markup = create_history_menu()

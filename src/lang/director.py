@@ -73,6 +73,5 @@ language_manager = LanguageManager()
 def humanize(key: str) -> str:
     language = get_current_language()
     text = language_manager.get_text(key, language)
-    logging.debug(f"Humanize: key='{key}', language='{language}', result='{text}'")
     return text
 

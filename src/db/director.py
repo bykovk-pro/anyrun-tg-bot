@@ -2,7 +2,9 @@ import os
 import datetime 
 import logging
 import pyzipper
-from src.db.common import get_db_pool, DB_FILE
+import tempfile
+import shutil
+from src.db.common import get_db_pool, DB_FILE, ROOT_DIR
 from src.db.users import add_user
 
 async def init_database():
@@ -46,29 +48,69 @@ async def init_database():
         logging.critical(f"Error initializing database: {e}")
         raise
 
-async def backup(config):
+async def backup(config): # TODO: В архив не попадает файл с базой данных
     try:
+        if not os.path.exists(DB_FILE):
+            logging.error(f"Database file does not exist: {DB_FILE}")
+            return None
+        
+        logging.debug(f"Database file exists: {DB_FILE}")
+        
+        backup_dir = os.path.join(ROOT_DIR, 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
+        logging.info(f"Backup directory created/confirmed: {backup_dir}")
+        
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_filename = f"{timestamp}.zip"
-        backup_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "backups", backup_filename)
-
-        os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+        backup_filename = f"backup_{timestamp}.zip"
+        backup_path = os.path.join(backup_dir, backup_filename)
+        logging.debug(f"Backup file path: {backup_path}")
         
-        compression_level = 9 
-        password = config.get('DB_PASSWORD')
+        password = config.get('DB_PASSWORD', None)
+        if password is None:
+            logging.error("DB_PASSWORD is not set in the configuration.")
+            return None
         
-        if not password:
-            raise ValueError("DB_PASSWORD not set in environment variables")
+        try:
+            with pyzipper.AESZipFile(backup_path, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zipf:
+                zipf.setpassword(password.encode())
+                logging.debug(f"Attempting to add database file to backup: {DB_FILE}")
+                zipf.write(DB_FILE, arcname=os.path.basename(DB_FILE))
+        except (PermissionError, FileNotFoundError) as file_error:
+            logging.error(f"File access error: {str(file_error)}")
+            return None
+        except Exception as e:
+            logging.error(f"Error during backup process: {str(e)}")
+            return None
         
-        with pyzipper.AESZipFile(backup_path, 'w', compression=pyzipper.ZIP_LZMA, 
-                                 encryption=pyzipper.WZ_AES, compresslevel=compression_level) as zf:
-            zf.setpassword(password.encode())
-            zf.write(DB_FILE, os.path.basename(DB_FILE))
-        
-        logging.info(f"Database backup created: {backup_path}")
-        return backup_path
+        if os.path.exists(backup_path):
+            backup_size = os.path.getsize(backup_path)
+            logging.info(f"Backup file created. Size: {backup_size} bytes")
+            if backup_size > 0:
+                logging.info(f"Database backup created successfully: {backup_path}")
+                return backup_path
+            else:
+                logging.error(f"Created backup file is empty: {backup_path}")
+                return None
+        else:
+            logging.error(f"Backup file was not created: {backup_path}")
+            return None
     except Exception as e:
         logging.error(f"Error creating database backup: {str(e)}")
+        return None
+
+async def restore(config, backup_file):
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with pyzipper.AESZipFile(backup_file, 'r', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zipf:
+                zipf.setpassword(config.get('DB_PASSWORD', '').encode())
+                zipf.extractall(temp_dir)
+            
+            extracted_db = os.path.join(temp_dir, os.path.basename(DB_FILE))
+            shutil.copy2(extracted_db, DB_FILE)
+        
+        logging.info(f"Database restored from backup: {backup_file}")
+    except Exception as e:
+        logging.error(f"Error restoring database from backup: {str(e)}")
         raise
 
 async def check_and_setup_admin(config):
