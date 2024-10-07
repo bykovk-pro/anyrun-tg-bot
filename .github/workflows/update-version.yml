@@ -30,9 +30,16 @@ jobs:
           minor=${VERSION_PARTS[1]}
           patch=${VERSION_PARTS[2]}
           
-          # Увеличиваем minor версию
-          new_minor=$((minor + 1))
-          new_version="$major.$new_minor.0"
+          # Получаем последнее коммит-сообщение
+          commit_message=$(git log -1 --pretty=%B)
+          
+          # Определяем, нужно ли увеличить major версию
+          if [[ $commit_message == *"#major"* ]]; then
+            new_version="$((major + 1)).0.0"
+          else
+            # По умолчанию увеличиваем minor версию
+            new_version="$major.$((minor + 1)).0"
+          fi
           
           echo "New version: $new_version"
           echo "$new_version" > version.txt
