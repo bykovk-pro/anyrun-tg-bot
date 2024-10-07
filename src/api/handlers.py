@@ -9,7 +9,7 @@ from src.api.menu import (
 from src.api.settings import (
     manage_api_key, show_api_keys, add_api_key, delete_api_key,
     change_api_key_name, set_active_api_key, handle_api_key_actions,
-    handle_text_input, change_language, check_access_rights, wipe_user_data
+    handle_text_input, check_access_rights, handle_group_info
 )
 from src.api.help import (
     show_help_menu, open_sandbox_service, open_api_documentation, send_feedback
@@ -62,9 +62,7 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(handle_api_key_actions, pattern='^(delete_|rename_|activate_|back_to_manage_api_key)'))
 
     # Обработчики для настроек
-    application.add_handler(CallbackQueryHandler(change_language, pattern='^change_language$'))
     application.add_handler(CallbackQueryHandler(check_access_rights, pattern='^check_access_rights$'))
-    application.add_handler(CallbackQueryHandler(wipe_user_data, pattern='^wipe_data$'))
 
     # Обработчики для меню помощи
     application.add_handler(CallbackQueryHandler(open_sandbox_service, pattern='^sandbox_service$'))
@@ -102,6 +100,9 @@ def setup_handlers(application: Application):
 
     # Обработчик для неизвестных callback-запросов
     application.add_handler(CallbackQueryHandler(handle_unknown_callback))
+
+    # Обработчик для информации о группе
+    application.add_handler(CallbackQueryHandler(handle_group_info, pattern='^group_info_'))
 
 async def handle_unknown_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query

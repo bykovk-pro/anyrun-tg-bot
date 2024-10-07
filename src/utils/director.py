@@ -58,7 +58,7 @@ async def run(config):
         await application.start()
         await application.updater.start_polling()
         
-        logging.warning(f"Application anyrun-tg-bot started")
+        logging.info(f"Application anyrun-tg-bot started")
         
         while True:
             await asyncio.sleep(1)

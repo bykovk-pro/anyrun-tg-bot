@@ -43,7 +43,6 @@ class LanguageManager:
             with open(lang_file, 'r', encoding='utf-8') as f:
                 self.languages[lang_code] = json.load(f)
             logging.info(f"Loaded language file: {lang_file}")
-            logging.debug(f"Language {lang_code} contents: {self.languages[lang_code]}")
         except FileNotFoundError:
             logging.warning(f"Language file not found: {lang_file}")
         except json.JSONDecodeError:

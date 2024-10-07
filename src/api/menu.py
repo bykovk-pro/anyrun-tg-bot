@@ -26,9 +26,7 @@ def create_sandbox_api_menu():
 def create_settings_menu(is_admin=False):
     keyboard = [
         [InlineKeyboardButton(humanize("MENU_BUTTON_MANAGE_API_KEY"), callback_data='manage_api_key')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_CHANGE_LANGUAGE"), callback_data='change_language')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_CHECK_ACCESS_RIGHTS"), callback_data='check_access_rights')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_WIPE_DATA"), callback_data='wipe_data')]
+        [InlineKeyboardButton(humanize("MENU_BUTTON_CHECK_ACCESS_RIGHTS"), callback_data='check_access_rights')]
     ]
     if is_admin:
         keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_ADMIN_PANEL"), callback_data='admin_panel')])

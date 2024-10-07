@@ -63,6 +63,10 @@ async def main():
         return
 
     try:
+        if args.action in ['start', 'restart']:
+            logging.debug("- * " * 12)
+            logging.debug(f"Starting ANY.RUN Sandbox API Bot v{__version__}")
+
         if args.action == 'start':
             await run(config)
         elif args.action == 'stop':

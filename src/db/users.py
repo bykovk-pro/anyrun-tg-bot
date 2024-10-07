@@ -1,13 +1,13 @@
 import logging
 from src.db.common import get_db_pool
 
-async def db_add_user(telegram_id: int, lang: str = 'en', is_admin: bool = False):
+async def db_add_user(telegram_id: int, is_admin: bool = False):
     try:
         db = await get_db_pool()
         await db.execute('''
-            INSERT OR IGNORE INTO users (telegram_id, lang, is_admin)
-            VALUES (?, ?, ?)
-        ''', (telegram_id, lang, is_admin))
+            INSERT OR IGNORE INTO users (telegram_id, is_admin)
+            VALUES (?, ?)
+        ''', (telegram_id, is_admin))
         await db.commit()
     except Exception as e:
         logging.error(f"Error adding user: {e}")

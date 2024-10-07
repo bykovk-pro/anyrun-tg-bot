@@ -15,7 +15,6 @@ async def init_database():
         await db.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 telegram_id BIGINT PRIMARY KEY,
-                lang TEXT NOT NULL DEFAULT 'en',
                 first_access_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_access_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 is_admin BOOLEAN DEFAULT FALSE,

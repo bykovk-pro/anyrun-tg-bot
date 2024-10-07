@@ -1,12 +1,15 @@
 import datetime
 import re
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import os
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat
 from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
 from src.lang.director import humanize
 from src.db.api_keys import (
     db_add_api_key, db_get_api_keys, db_delete_api_key, 
     db_change_api_key_name, db_set_active_api_key
 )
+from src.api.security import check_in_groups
+from telegram.constants import ChatType
 
 def create_manage_api_key_menu():
     keyboard = [
@@ -19,31 +22,54 @@ def create_manage_api_key_menu():
     ]
     return InlineKeyboardMarkup(keyboard)
 
-def create_change_language_menu():
-    keyboard = [
-        [InlineKeyboardButton(humanize("MENU_BUTTON_AUTO_DETECT_LANGUAGE"), callback_data='auto_detect_language')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_SET_LANGUAGE"), callback_data='set_language')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='settings')]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
 async def manage_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu_text = humanize("MANAGE_API_KEY_MENU_TEXT")
     reply_markup = create_manage_api_key_menu()
     await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
 
-async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    menu_text = humanize("CHANGE_LANGUAGE_MENU_TEXT")
-    reply_markup = create_change_language_menu()
-    await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
-
 async def check_access_rights(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Реализация проверки прав доступа
-    pass
-
-async def wipe_user_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Реализация удаления данных пользователя
-    pass
+    user_id = update.effective_user.id
+    required_group_ids = os.getenv('REQUIRED_GROUP_IDS', '')
+    
+    user_groups = await check_in_groups(context.bot, user_id, is_bot=False, required_group_ids=required_group_ids)
+    
+    if not user_groups:
+        await update.callback_query.answer(humanize("NO_REQUIRED_GROUPS"))
+        await update.callback_query.edit_message_text(humanize("NO_REQUIRED_GROUPS"))
+        return
+    
+    keyboard = []
+    message_text = humanize("ACCESS_RIGHTS_INFO") + "\n\n"
+    
+    for group_id, (is_member, chat, bot_is_member) in user_groups.items():
+        if chat:
+            group_name = chat.title
+            status_icon = "✅" if is_member else "❌"
+            button_text = f"{status_icon} {group_name}"
+            message_text += f"{button_text}\n"
+            
+            invite_link = chat.invite_link if bot_is_member else None
+            if not invite_link and chat.username:
+                invite_link = f"https://t.me/{chat.username}"
+            elif not invite_link and chat.type == ChatType.SUPERGROUP:
+                invite_link = f"https://t.me/c/{str(chat.id)[4:]}"
+            
+            if invite_link:
+                keyboard.append([InlineKeyboardButton(button_text, url=invite_link)])
+            else:
+                keyboard.append([InlineKeyboardButton(button_text, callback_data=f"group_info_{group_id}")])
+        else:
+            button_text = f"❓ Group {group_id}"
+            message_text += f"{button_text}\n"
+            keyboard.append([InlineKeyboardButton(button_text, callback_data=f"group_info_{group_id}")])
+    
+    if not keyboard:
+        message_text += humanize("NO_ACCESSIBLE_GROUPS")
+    
+    keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='settings')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.callback_query.edit_message_text(message_text, reply_markup=reply_markup)
 
 async def show_api_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -55,8 +81,8 @@ async def show_api_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keys_text = humanize("YOUR_API_KEYS") + "\n\n"
     for key, name, is_active in api_keys:
-        status = humanize("ACTIVE") if is_active else humanize("INACTIVE")
-        keys_text += f"{name}: {key[:6]}...{key[-6:]} ({status})\n"
+        status = "✅ " if is_active else ""
+        keys_text += f"{status}{name}: {key[:6]}...{key[-6:]}\n"
 
     await update.callback_query.edit_message_text(keys_text, reply_markup=create_manage_api_key_menu())
 
@@ -74,8 +100,8 @@ async def delete_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = []
     for key, name, is_active in api_keys:
-        status = humanize("ACTIVE") if is_active else humanize("INACTIVE")
-        button_text = f"{name}: {key[:6]}...{key[-6:]} ({status})"
+        status = "✅ " if is_active else ""
+        button_text = f"{status}{name}: {key[:6]}...{key[-6:]}"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=f"delete_{key}")])
     
     keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='back_to_manage_api_key')])
@@ -93,8 +119,8 @@ async def change_api_key_name(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     keyboard = []
     for key, name, is_active in api_keys:
-        status = humanize("ACTIVE") if is_active else humanize("INACTIVE")
-        button_text = f"{name}: {key[:6]}...{key[-6:]} ({status})"
+        status = "✅ " if is_active else ""
+        button_text = f"{status}{name}: {key[:6]}...{key[-6:]}"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=f"rename_{key}")])
     
     keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='back_to_manage_api_key')])
@@ -112,8 +138,8 @@ async def set_active_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     keyboard = []
     for key, name, is_active in api_keys:
-        status = humanize("ACTIVE") if is_active else humanize("INACTIVE")
-        button_text = f"{name}: {key[:6]}...{key[-6:]} ({status})"
+        status = "✅ " if is_active else ""
+        button_text = f"{status}{name}: {key[:6]}...{key[-6:]}"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=f"activate_{key}")])
     
     keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='back_to_manage_api_key')])
@@ -177,7 +203,7 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await update.message.reply_text(humanize("ERROR_ADDING_API_KEY"))
         
-        # Отправляем новое сообщение с меню
+        # Отпрвляем новое сообщение с меню
         menu_text = humanize("MANAGE_API_KEY_MENU_TEXT")
         reply_markup = create_manage_api_key_menu()
         await update.message.reply_text(menu_text, reply_markup=reply_markup)
@@ -202,3 +228,8 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(menu_text, reply_markup=reply_markup)
     
     del context.user_data['next_action']
+
+async def handle_group_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    group_id = query.data.split('_')[-1]
+    await query.answer(humanize("GROUP_LINK_NOT_AVAILABLE"))
