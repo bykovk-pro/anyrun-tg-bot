@@ -4,7 +4,7 @@ import logging
 import tempfile
 import asyncio
 from src.db.director import init_database, check_and_setup_admin
-from src.api.telegram import setup_telegram_bot  # Добавим этот импорт обратно
+from src.api.telegram import setup_telegram_bot
 
 PID_FILE = os.path.join(tempfile.gettempdir(), 'anyrun-tg-bot.pid')
 SERVICE_NAME = 'anyrun-tg-bot.service'
@@ -58,7 +58,7 @@ async def run(config):
         await application.start()
         await application.updater.start_polling()
         
-        logging.warning(f"Application anyrun-tg-bot started")
+        logging.info(f"Application anyrun-tg-bot started")
         
         while True:
             await asyncio.sleep(1)
