@@ -1,0 +1,43 @@
+name: Update Version
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+      
+      - name: Update version
+        run: |
+          # Получаем текущую версию
+          current_version=$(cat version.txt)
+          echo "Current version: $current_version"
+          
+          # Разбиваем версию на компоненты
+          IFS='.' read -ra VERSION_PARTS <<< "$current_version"
+          major=${VERSION_PARTS[0]}
+          minor=${VERSION_PARTS[1]}
+          patch=${VERSION_PARTS[2]}
+          
+          # Увеличиваем minor версию
+          new_minor=$((minor + 1))
+          new_version="$major.$new_minor.0"
+          
+          echo "New version: $new_version"
+          echo "$new_version" > version.txt
+          
+          # Коммитим изменения
+          git add version.txt
+          git commit -m "Bump version to $new_version"
+          git push
