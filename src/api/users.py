@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
-from src.db.users import get_all_users, ban_user_by_id, unban_user_by_id, delete_user_by_id
+from src.db.users import db_get_all_users, db_ban_user_by_id, db_unban_user_by_id, db_delete_user_by_id
 from src.api.admin import show_manage_users_menu
 
 def create_show_all_users_menu(users, page=0, users_per_page=10):
@@ -23,7 +23,7 @@ def create_show_all_users_menu(users, page=0, users_per_page=10):
     return InlineKeyboardMarkup(keyboard)
 
 async def show_all_users(update: Update, context: ContextTypes.DEFAULT_TYPE, page=0):
-    users = await get_all_users()
+    users = await db_get_all_users()
     menu_text = humanize("SHOW_ALL_USERS_MENU_TEXT")
     reply_markup = create_show_all_users_menu(users, page)
     await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
@@ -45,11 +45,11 @@ async def process_user_action(update: Update, context: ContextTypes.DEFAULT_TYPE
     action = context.user_data.get('next_action')
     
     if action == 'ban_user':
-        result = await ban_user_by_id(user_id)
+        result = await db_ban_user_by_id(user_id)
     elif action == 'unban_user':
-        result = await unban_user_by_id(user_id)
+        result = await db_unban_user_by_id(user_id)
     elif action == 'delete_user':
-        result = await delete_user_by_id(user_id)
+        result = await db_delete_user_by_id(user_id)
     else:
         result = False
     

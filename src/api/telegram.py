@@ -1,17 +1,55 @@
 import logging
+import validators
+import re
 from telegram import Update, User
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.error import BadRequest, TelegramError
 from src.lang.context import set_user_language_getter, set_language_for_user
 from src.lang.director import humanize
 from src.api.security import setup_telegram_security, check_in_groups
-from src.api.menu import setup_menu_handlers, show_main_menu, create_main_menu
+from src.api.menu import show_main_menu, create_main_menu
 from src.api.sandbox import run_url_analysis
+from src.api.settings import handle_text_input as settings_handle_text_input
 
 def get_user_language(user: User) -> str:
     return user.language_code if user.language_code else 'en'
 
 set_user_language_getter(get_user_language)
+
+def is_url(text: str) -> bool:
+    # Регулярное выражение для проверки URL
+    url_pattern = re.compile(
+        r'^((?:https?:\/\/)?'  # протокол (опционально)
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # домен
+        r'localhost|'  # localhost
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # IP адрес
+        r'(?::\d+)?'  # порт (опционально)
+        r'(?:/?|[/?]\S+))$', re.IGNORECASE)
+    
+    return bool(url_pattern.match(text))
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        set_language_for_user(update.effective_user)
+        message_text = update.message.text
+        
+        # Проверяем, ожидает ли бот ввода для конкретного действия
+        next_action = context.user_data.get('next_action')
+        if next_action:
+            # Если ожидается действие, передаем управление в соответствующий обработчик
+            await settings_handle_text_input(update, context)
+        elif is_url(message_text):
+            # Если это URL, запускаем анализ
+            await run_url_analysis(update, context)
+        else:
+            # Если это не URL и нет ожидаемого действия, отправляем сообщение о неверном вводе
+            invalid_input_message = humanize("INVALID_INPUT")
+            await update.message.reply_text(invalid_input_message)
+            await show_main_menu(update, context)
+        
+        logging.debug(f'User sent a message: user_id={update.effective_user.id}, message={message_text}')
+    except Exception as e:
+        logging.error(f'Error in handle_message: {str(e)}, user_id={update.effective_user.id}, message={update.message.text}')
 
 async def setup_telegram_bot(config):
     TOKEN = config.get('TELEGRAM_TOKEN')
@@ -40,8 +78,13 @@ async def setup_telegram_bot(config):
         application.add_handler(CommandHandler("start", start))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         application.add_handler(CommandHandler("menu", show_main_menu))
-        setup_menu_handlers(application)
+        
+        # Импортируем setup_handlers здесь, чтобы избежать циклического импорта
+        from src.api.handlers import setup_handlers
+        setup_handlers(application)
+        
         application.add_error_handler(handle_telegram_error)
+        
         logging.debug('Command handlers added successfully')
         
         logging.info('Telegram bot setup completed')
@@ -56,20 +99,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     welcome_message = humanize("WELCOME_MESSAGE")
     await update.message.reply_text(welcome_message)
     await show_main_menu(update, context)
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    try:
-        set_language_for_user(update.effective_user)
-        message_text = update.message.text
-        if message_text.startswith('http://') or message_text.startswith('https://'):
-            await run_url_analysis(update, context)
-        else:
-            invalid_input_message = humanize("INVALID_INPUT")
-            await update.message.reply_text(invalid_input_message)
-            await show_main_menu(update, context)
-        logging.debug(f'User sent a message: user_id={update.effective_user.id}, message={message_text}')
-    except Exception as e:
-        logging.error(f'Error in handle_message: {str(e)}, user_id={update.effective_user.id}, message={update.message.text}')
 
 async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     set_language_for_user(update.effective_user)
@@ -86,3 +115,4 @@ async def handle_telegram_error(update: Update, context: ContextTypes.DEFAULT_TY
         logging.error(f"TelegramError: {error}")
     else:
         logging.error(f"Unexpected error: {error}")
+

@@ -1,7 +1,7 @@
 import logging
 from src.db.common import get_db_pool
 
-async def add_user(telegram_id: int, lang: str = 'en', is_admin: bool = False):
+async def db_add_user(telegram_id: int, lang: str = 'en', is_admin: bool = False):
     try:
         db = await get_db_pool()
         await db.execute('''
@@ -13,7 +13,7 @@ async def add_user(telegram_id: int, lang: str = 'en', is_admin: bool = False):
         logging.error(f"Error adding user: {e}")
         raise
 
-async def get_user(telegram_id: int):
+async def db_get_user(telegram_id: int):
     try:
         db = await get_db_pool()
         async with db.execute('SELECT * FROM users WHERE telegram_id = ?', (telegram_id,)) as cursor:
@@ -22,7 +22,7 @@ async def get_user(telegram_id: int):
         logging.error(f"Error getting user: {e}")
         raise
 
-async def update_user_language(telegram_id: int, lang: str):
+async def db_update_user_language(telegram_id: int, lang: str):
     try:
         db = await get_db_pool()
         await db.execute('UPDATE users SET lang = ? WHERE telegram_id = ?', (lang, telegram_id))
@@ -31,7 +31,7 @@ async def update_user_language(telegram_id: int, lang: str):
         logging.error(f"Error updating user language: {e}")
         raise
 
-async def is_user_admin(telegram_id: int):
+async def db_is_user_admin(telegram_id: int):
     try:
         db = await get_db_pool()
         async with db.execute('SELECT is_admin FROM users WHERE telegram_id = ?', (telegram_id,)) as cursor:
@@ -41,7 +41,7 @@ async def is_user_admin(telegram_id: int):
         logging.error(f"Error checking if user is admin: {e}")
         raise
 
-async def get_all_users():
+async def db_get_all_users():
     try:
         db = await get_db_pool()
         async with db.execute("SELECT * FROM users ORDER BY telegram_id") as cursor:
@@ -52,7 +52,7 @@ async def get_all_users():
         logging.error(f"Error getting all users: {e}")
         return []
 
-async def ban_user_by_id(user_id):
+async def db_ban_user_by_id(user_id):
     try:
         db = await get_db_pool()
         await db.execute("UPDATE users SET is_banned = TRUE WHERE telegram_id = ?", (int(user_id),))
@@ -62,7 +62,7 @@ async def ban_user_by_id(user_id):
         logging.error(f"Error banning user {user_id}: {e}")
         return False
 
-async def unban_user_by_id(user_id):
+async def db_unban_user_by_id(user_id):
     try:
         db = await get_db_pool()
         await db.execute("UPDATE users SET is_banned = FALSE WHERE telegram_id = ?", (int(user_id),))
@@ -72,7 +72,7 @@ async def unban_user_by_id(user_id):
         logging.error(f"Error unbanning user {user_id}: {e}")
         return False
 
-async def delete_user_by_id(user_id):
+async def db_delete_user_by_id(user_id):
     try:
         db = await get_db_pool()
         await db.execute("UPDATE users SET is_deleted = TRUE WHERE telegram_id = ?", (int(user_id),))

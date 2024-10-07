@@ -5,7 +5,7 @@ import pyzipper
 import tempfile
 import shutil
 from src.db.common import get_db_pool, DB_FILE, ROOT_DIR
-from src.db.users import add_user
+from src.db.users import db_add_user
 
 async def init_database():
     try:
@@ -116,4 +116,4 @@ async def restore(config, backup_file):
 async def check_and_setup_admin(config):
     admin_id = config.get('TELEGRAM_ADMIN_ID')
     if admin_id:
-        await add_user(int(admin_id), is_admin=True)
+        await db_add_user(int(admin_id), is_admin=True)
