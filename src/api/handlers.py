@@ -24,7 +24,7 @@ from src.api.bot import (
     restore_database, process_database_restore
 )
 from src.api.sandbox import (
-    run_url_analysis, run_file_analysis, show_history, show_api_limits
+    run_url_analysis, run_file_analysis, show_api_limits
 )
 from src.api.users import (
     show_all_users, ban_user, unban_user, delete_user, process_user_action
@@ -47,9 +47,9 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(show_help_menu, pattern='^help$'))
 
     # Обработчики для Sandbox API
-    application.add_handler(CallbackQueryHandler(run_url_analysis, pattern='^run_url_analysis$'))
-    application.add_handler(CallbackQueryHandler(run_file_analysis, pattern='^run_file_analysis$'))
-    application.add_handler(CallbackQueryHandler(show_history, pattern='^history$'))
+    application.add_handler(CallbackQueryHandler(handle_run_url_analysis, pattern='^run_url_analysis$'))
+    application.add_handler(CallbackQueryHandler(handle_get_report_by_uuid, pattern='^get_report_by_uuid$'))
+    application.add_handler(CallbackQueryHandler(handle_get_history, pattern='^get_history$'))
     application.add_handler(CallbackQueryHandler(show_api_limits, pattern='^show_api_limits$'))
 
     # Обработчики для управления API ключами
@@ -108,3 +108,12 @@ async def handle_unknown_callback(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
     await show_main_menu(update, context)
+
+async def handle_run_url_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.answer(text="Run URL Analysis - Placeholder")
+
+async def handle_get_report_by_uuid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.answer(text="Get Report by UUID - Placeholder")
+
+async def handle_get_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.answer(text="Get History - Placeholder")

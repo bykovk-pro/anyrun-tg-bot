@@ -11,18 +11,14 @@ def create_history_menu():
     return InlineKeyboardMarkup(keyboard)
 
 async def run_url_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Реализация анализа URL
-    pass
+    await update.callback_query.answer(text="Run URL Analysis - Placeholder")
 
 async def run_file_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Реализация анализа файла
-    pass
+    await update.callback_query.answer(text="Run File Analysis - Placeholder")
 
 async def show_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    menu_text = humanize("HISTORY_MENU_TEXT")
-    reply_markup = create_history_menu()
-    await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
+    # Удаляем функцию show_history, так как она больше не нужна
+    pass
 
 async def show_api_limits(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Реализация показа лимитов API
-    pass
+    await update.callback_query.answer(text="Show API Limits - Placeholder")
