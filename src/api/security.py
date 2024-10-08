@@ -3,6 +3,12 @@ from telegram import Bot, Chat
 import re
 from telegram.error import TelegramError
 from telegram.constants import ChatMemberStatus, ChatType
+import time
+from src.db.users import db_get_user, db_is_user_admin
+from src.db.api_keys import db_get_api_keys
+
+# Rate limiter
+last_api_call_time = {}
 
 def setup_telegram_security(token) -> str:
     if not token:
@@ -68,3 +74,48 @@ async def check_in_groups(bot: Bot, check_id: int, is_bot: bool = False, require
                 groups_info[group_id] = (False, None, False)
     
     return groups_info
+
+async def check_user_groups(bot: Bot, user_id: int, required_group_ids: str):
+    if await db_is_user_admin(user_id):
+        return True  # Admins are exempt from group checks
+
+    user = await db_get_user(user_id)
+    if not user:
+        logging.warning(f"User {user_id} not found in the database.")
+        return False
+
+    # Check if user is in required groups
+    groups_info = await check_in_groups(bot, user_id, is_bot=False, required_group_ids=required_group_ids)
+    return bool(groups_info)
+
+async def check_user_api_keys(user_id: int):
+    api_keys = await db_get_api_keys(user_id)
+    if not api_keys:
+        logging.warning(f"No API keys found for user {user_id}.")
+        return False
+
+    # Check if at least one API key is active
+    return any(key[2] for key in api_keys)  # Assuming the third element is is_active
+
+async def rate_limiter(user_id: int):
+    if await db_is_user_admin(user_id):
+        return True  # Admins are exempt from rate limiting
+
+    global last_api_call_time
+    current_time = time.time()
+    if user_id in last_api_call_time:
+        if current_time - last_api_call_time[user_id] < 30:
+            return False  # Rate limit exceeded
+    last_api_call_time[user_id] = current_time
+    return True
+
+async def check_user_and_api_key(user_id: int):
+    api_keys = await db_get_api_keys(user_id)
+
+    # Получаем активный API ключ
+    active_api_key = next((key for key in api_keys if key[2]), None)  # Assuming the third element is is_active
+
+    if not active_api_key:
+        return None, "You do not have any active API keys."
+
+    return active_api_key[0], None  # Возвращаем активный API ключ и сообщение об ошибке

@@ -36,7 +36,7 @@
     "MENU_BUTTON_ADD_API_KEY": "Add API Key",
     "MENU_BUTTON_ADMIN_PANEL": "Admin Panel",
     "MENU_BUTTON_API_DOCUMENTATION": "API Documentation",
-    "MENU_BUTTON_BACK": "Back to Settings",
+    "MENU_BUTTON_BACK": "Back to previous menu",
     "MENU_BUTTON_BACKUP_DATABASE": "Backup Database",
     "MENU_BUTTON_BAN_USER": "Ban User",
     "MENU_BUTTON_CHANGE_API_KEY_NAME": "Change API Key Name",
@@ -101,5 +101,14 @@
     "GROUP_INFO_NOT_AVAILABLE": "Information about this group is not available.",
     "GROUP_LINK_NOT_AVAILABLE": "Sorry, the link for this group is not available. Please contact the administrator for assistance.",
     "CHANGE_LOG_LEVEL_PROMPT": "Please select a new log level (current: {current_level})",
-    "DATABASE_RESTORED": "Database has been restored successfully."
+    "DATABASE_RESTORED": "Database has been restored successfully.",
+    "MENU_BUTTON_GET_LIMITS": "Get User Limits",
+    "CHOOSE_OPTION": "Choose an option:",
+    "YOUR_ANALYSIS_HISTORY": "Your Analysis History:",
+    "YOUR_SANDBOX_API_LIMITS": "Your Sandbox API Limits",
+    "MONTH": "Month",
+    "DAY": "Day",
+    "HOUR": "Hour",
+    "MINUTE": "Minute",
+    "UNKNOWN_ERROR": "An unknown error occurred."
 }

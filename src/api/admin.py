@@ -1,6 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
+from src.api.menu_utils import create_admin_menu  # Импортируйте из нового файла
 
 
 def create_admin_panel_menu():

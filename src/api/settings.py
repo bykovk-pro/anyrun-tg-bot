@@ -74,9 +74,9 @@ async def check_access_rights(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def show_api_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     api_keys = await db_get_api_keys(user_id)
-    
+
     if not api_keys:
-        await update.callback_query.answer(humanize("NO_API_KEYS_FOUND"))
+        await update.callback_query.answer(text=humanize("NO_API_KEYS_FOUND"))
         return
 
     keys_text = humanize("YOUR_API_KEYS") + "\n\n"
@@ -84,7 +84,16 @@ async def show_api_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
         status = "✅ " if is_active else ""
         keys_text += f"{status}{name}: {key[:6]}...{key[-6:]}\n"
 
-    await update.callback_query.edit_message_text(keys_text, reply_markup=create_manage_api_key_menu())
+    await update.callback_query.message.reply_text(keys_text)
+
+    # Создаем кнопку "Back to Settings"
+    keyboard = [
+        [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='settings')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Отправляем кнопку
+    await update.callback_query.message.reply_text(humanize("CHOOSE_OPTION"), reply_markup=reply_markup)
 
 async def add_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.edit_message_text(humanize("ENTER_NEW_API_KEY_FORMAT"))
