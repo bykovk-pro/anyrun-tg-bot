@@ -4,7 +4,6 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.users import db_is_user_admin
-from src.api.menu_utils import create_sandbox_api_menu  # Импортируем из нового файла
 
 def create_main_menu():
     keyboard = [

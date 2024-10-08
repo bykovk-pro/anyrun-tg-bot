@@ -50,4 +50,4 @@ dmypy.json
 cython_debug/
 .gitignore
 .github/
-
+.cursorignore

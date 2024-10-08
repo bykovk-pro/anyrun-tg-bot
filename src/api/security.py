@@ -86,7 +86,8 @@ async def check_user_groups(bot: Bot, user_id: int, required_group_ids: str):
 
     # Check if user is in required groups
     groups_info = await check_in_groups(bot, user_id, is_bot=False, required_group_ids=required_group_ids)
-    return bool(groups_info)
+    # Check if the user is in any of the required groups
+    return any(info[0] for info in groups_info.values())  # {{ edit_1 }}
 
 async def check_user_api_keys(user_id: int):
     api_keys = await db_get_api_keys(user_id)

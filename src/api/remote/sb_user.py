@@ -2,6 +2,7 @@ import logging
 import aiohttp
 from src.api.security import check_user_groups, check_user_api_keys, rate_limiter
 from src.lang.director import humanize  # Импортируем humanize для получения текстов
+import json  # Import json for handling non-JSON responses
 
 async def get_api_limits(bot, user_id, required_group_ids):
     if not await check_user_groups(bot, user_id, required_group_ids):
@@ -43,7 +44,10 @@ async def get_user_limits(api_key: str):
                         f"{humanize('MINUTE')} - {'Unlimited' if minute == -1 else minute}"
                     )
                 else:
-                    error_message = await response.json()
+                    try:
+                        error_message = await response.json()  # Attempt to parse JSON
+                    except ValueError:  # Handle case where response is not JSON
+                        error_message = {"message": "Response is not valid JSON"}
                     return {"error": error_message.get("message", humanize("UNKNOWN_ERROR"))}
         except Exception as e:
             logging.error(f"Error fetching user limits: {str(e)}")
