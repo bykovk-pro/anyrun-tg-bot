@@ -24,12 +24,11 @@ from src.api.bot import (
     restore_database, process_database_restore
 )
 from src.api.sandbox import (
-    run_url_analysis, run_file_analysis, show_api_limits, show_history  # show_history здесь
+    run_url_analysis, show_api_limits, show_history
 )
 from src.api.users import (
     show_all_users, ban_user, unban_user, delete_user, process_user_action
 )
-from src.api.menu_utils import create_help_menu  # Импортируйте из нового файла
 
 def setup_handlers(application: Application):
     # Основные команды
@@ -49,7 +48,7 @@ def setup_handlers(application: Application):
     # Обработчики для Sandbox API
     application.add_handler(CallbackQueryHandler(run_url_analysis, pattern='^run_url_analysis$'))
     application.add_handler(CallbackQueryHandler(handle_get_report_by_uuid, pattern='^get_report_by_uuid$'))
-    application.add_handler(CallbackQueryHandler(show_history, pattern='^get_history$'))  # Убедитесь, что эта строка присутствует
+    application.add_handler(CallbackQueryHandler(show_history, pattern='^get_history$'))
     application.add_handler(CallbackQueryHandler(show_api_limits, pattern='^show_api_limits$'))
 
     # Обработчики для управления API ключами
@@ -63,11 +62,6 @@ def setup_handlers(application: Application):
 
     # Обработчики для настроек
     application.add_handler(CallbackQueryHandler(check_access_rights, pattern='^check_access_rights$'))
-
-    # Обработчики для меню помощи
-    # application.add_handler(CallbackQueryHandler(open_sandbox_service, pattern='^sandbox_service$'))
-    # application.add_handler(CallbackQueryHandler(open_api_documentation, pattern='^api_documentation$'))
-    # application.add_handler(CallbackQueryHandler(send_feedback, pattern='^send_feedback$'))
 
     # Обработчики для админ-панели
     application.add_handler(CallbackQueryHandler(show_admin_panel, pattern='^admin_panel$'))
@@ -105,9 +99,26 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(handle_group_info, pattern='^group_info_'))
 
     # Обработчики для навигации по истории
-    application.add_handler(CallbackQueryHandler(handle_history_navigation, pattern='^history_previous$'))
-    application.add_handler(CallbackQueryHandler(handle_history_navigation, pattern='^history_next$'))
+    application.add_handler(CallbackQueryHandler(handle_history_navigation, pattern='^show_history_previous$'))
+    application.add_handler(CallbackQueryHandler(handle_history_navigation, pattern='^show_history_next$'))
+
     application.add_handler(CallbackQueryHandler(show_main_menu, pattern='^sandbox_api$'))  # Ensure back button works
+
+
+async def handle_history_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    # Получаем текущее значение skip из контекста
+    skip = context.user_data.get('history_skip', 0)
+
+    if query.data == "show_history_previous":
+        skip = max(0, skip - 10)  # Уменьшаем skip, но не ниже 0
+    elif query.data == "show_history_next":
+        skip += 10  # Увеличиваем skip на 10
+
+    context.user_data['history_skip'] = skip  # Сохраняем новое значение skip
+    await show_history(update, context)  # Показать историю с новым значением skip
 
 async def handle_unknown_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -122,18 +133,3 @@ async def handle_get_report_by_uuid(update: Update, context: ContextTypes.DEFAUL
 
 async def handle_get_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_history(update, context)  # Убедитесь, что эта строка присутствует
-
-async def handle_history_navigation(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    # Получаем текущий сдвиг
-    skip = context.user_data.get('history_skip', 0)
-
-    if query.data == 'history_previous':
-        skip = max(0, skip - 10)  # Уменьшаем сдвиг, но не меньше 0
-    elif query.data == 'history_next':
-        skip += 10  # Увеличиваем сдвиг на 10
-
-    context.user_data['history_skip'] = skip  # Сохраняем новый сдвиг
-    await show_history(update, context)  # Показать историю с новым сдвигом

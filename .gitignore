@@ -1,3 +1,4 @@
+.gitignore
 backups/
 logs/
 docs/
@@ -48,6 +49,5 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
-.gitignore
 .github/
 .cursorignore

@@ -110,5 +110,8 @@
     "DAY": "Day",
     "HOUR": "Hour",
     "MINUTE": "Minute",
-    "UNKNOWN_ERROR": "An unknown error occurred."
+    "UNKNOWN_ERROR": "An unknown error occurred.",
+    "SHOW_HISTORY_MENU_TEXT": "Your Analysis History:",
+    "BUTTON_PREVIOUS": "Previous",
+    "BUTTON_NEXT": "Next"
 }
