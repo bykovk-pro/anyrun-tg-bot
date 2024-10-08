@@ -18,6 +18,7 @@
     "BOT_STOP_FAILED": "Failed to stop the bot. Restart aborted.",
     "BOT_RESTART_FAILED": "Failed to restart the bot. Please try again or contact the administrator.",
     "CONFIRM_RESTART_BOT": "Are you sure you want to restart the bot?",
+    "ENTER_NEW_API_KEY_FORMAT": "Please enter your new API key in the following format:\n<API_KEY> <KEY_NAME>\nFor example:\n1234567890abcdef My API Key\nIf you don't provide a name, a default name will be generated.",
     "ERROR_OCCURRED": "An error occurred. Please try again later or contact support.",
     "FEEDBACK_PROMPT": "Please enter your feedback or bug report:",
     "FEEDBACK_SENT": "Thank you for your feedback. It has been sent to the developers.",
