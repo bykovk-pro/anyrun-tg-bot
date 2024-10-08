@@ -12,7 +12,7 @@ from src.api.settings import (
     handle_text_input, check_access_rights, handle_group_info
 )
 from src.api.help import (
-    show_help_menu, open_sandbox_service, open_api_documentation, send_feedback
+    show_help_menu
 )
 from src.api.admin import (
     show_admin_panel, show_manage_users_menu, show_manage_bot_menu, 
@@ -65,9 +65,9 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(check_access_rights, pattern='^check_access_rights$'))
 
     # Обработчики для меню помощи
-    application.add_handler(CallbackQueryHandler(open_sandbox_service, pattern='^sandbox_service$'))
-    application.add_handler(CallbackQueryHandler(open_api_documentation, pattern='^api_documentation$'))
-    application.add_handler(CallbackQueryHandler(send_feedback, pattern='^send_feedback$'))
+    # application.add_handler(CallbackQueryHandler(open_sandbox_service, pattern='^sandbox_service$'))
+    # application.add_handler(CallbackQueryHandler(open_api_documentation, pattern='^api_documentation$'))
+    # application.add_handler(CallbackQueryHandler(send_feedback, pattern='^send_feedback$'))
 
     # Обработчики для админ-панели
     application.add_handler(CallbackQueryHandler(show_admin_panel, pattern='^admin_panel$'))
