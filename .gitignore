@@ -49,3 +49,5 @@ dmypy.json
 .pytype/
 cython_debug/
 .gitignore
+.github/
+

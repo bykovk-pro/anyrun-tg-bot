@@ -3,12 +3,9 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("version.txt", "r") as f:
-    version = f.read().strip()
-
 setup(
     name="anyrun-tg-bot",
-    version=version,
+    version="0.5.2",  # Здесь можно указать фиксированную версию или использовать другой метод версионирования
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     author="Kirill Bykov",
