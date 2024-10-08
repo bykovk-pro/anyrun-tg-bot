@@ -11,9 +11,6 @@ from src.db.common import get_db_pool
 # Загружаем переменные окружения из .env файла
 load_dotenv()
 
-with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.txt"), "r") as f:
-    __version__ = f.read().strip()
-
 def print_help():
     help_text = """
     ANY.RUN Sandbox API Bot Service
@@ -65,7 +62,7 @@ async def main():
     try:
         if args.action in ['start', 'restart']:
             logging.debug("- * " * 12)
-            logging.debug(f"Starting ANY.RUN Sandbox API Bot v{__version__}")
+            logging.debug(f"Starting ANY.RUN Sandbox API Bot")
 
         if args.action == 'start':
             await run(config)
