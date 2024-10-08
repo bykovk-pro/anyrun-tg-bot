@@ -20,31 +20,25 @@ jobs:
       
       - name: Update version
         run: |
-          # Получаем текущую версию
           current_version=$(cat version.txt)
           echo "Current version: $current_version"
           
-          # Разбиваем версию на компоненты
           IFS='.' read -ra VERSION_PARTS <<< "$current_version"
           major=${VERSION_PARTS[0]}
           minor=${VERSION_PARTS[1]}
           patch=${VERSION_PARTS[2]}
           
-          # Получаем последнее коммит-сообщение
           commit_message=$(git log -1 --pretty=%B)
           
-          # Определяем, нужно ли увеличить major версию
           if [[ $commit_message == *"#major"* ]]; then
             new_version="$((major + 1)).0.0"
           else
-            # По умолчанию увеличиваем minor версию
             new_version="$major.$((minor + 1)).0"
           fi
           
           echo "New version: $new_version"
           echo "$new_version" > version.txt
           
-          # Коммитим изменения
           git add version.txt
           git commit -m "Bump version to $new_version"
           git push

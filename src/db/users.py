@@ -5,12 +5,19 @@ async def db_add_user(telegram_id: int, is_admin: bool = False):
     try:
         db = await get_db_pool()
         await db.execute('''
-            INSERT OR IGNORE INTO users (telegram_id, is_admin)
-            VALUES (?, ?)
+            INSERT INTO users (telegram_id, is_admin, first_access_date, last_access_date)
+            VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(telegram_id) DO UPDATE SET
+            last_access_date = CURRENT_TIMESTAMP,
+            is_admin = CASE 
+                WHEN excluded.is_admin = 1 THEN 1
+                ELSE users.is_admin
+            END
         ''', (telegram_id, is_admin))
         await db.commit()
+        logging.info(f"User {telegram_id} added or updated in the database")
     except Exception as e:
-        logging.error(f"Error adding user: {e}")
+        logging.error(f"Error adding or updating user: {e}")
         raise
 
 async def db_get_user(telegram_id: int):
@@ -81,3 +88,18 @@ async def db_delete_user_by_id(user_id):
     except Exception as e:
         logging.error(f"Error deleting user {user_id}: {e}")
         return False
+
+async def db_add_or_update_user(telegram_id: int, is_admin: bool = False):
+    try:
+        db = await get_db_pool()
+        await db.execute('''
+            INSERT INTO users (telegram_id, is_admin, last_access_date)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(telegram_id) DO UPDATE SET
+            last_access_date = CURRENT_TIMESTAMP
+        ''', (telegram_id, is_admin))
+        await db.commit()
+        logging.info(f"User {telegram_id} added or updated in the database")
+    except Exception as e:
+        logging.error(f"Error adding or updating user: {e}")
+        raise

@@ -10,6 +10,7 @@ from src.api.security import setup_telegram_security, check_in_groups
 from src.api.menu import show_main_menu, create_main_menu
 from src.api.sandbox import run_url_analysis
 from src.api.settings import handle_text_input as settings_handle_text_input
+from src.db.users import db_add_user
 
 def get_user_language(user: User) -> str:
     return user.language_code if user.language_code else 'en'
@@ -96,6 +97,13 @@ async def setup_telegram_bot(config):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.debug(f'User started the bot: user_id={update.effective_user.id}')
     set_language_for_user(update.effective_user)
+    
+    # Добавляем или обновляем пользователя в базе данных
+    try:
+        await db_add_user(update.effective_user.id)
+    except Exception as e:
+        logging.error(f"Error adding/updating user in database: {e}")
+    
     welcome_message = humanize("WELCOME_MESSAGE")
     await update.message.reply_text(welcome_message)
     await show_main_menu(update, context)
