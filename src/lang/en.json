@@ -113,5 +113,10 @@
     "UNKNOWN_ERROR": "An unknown error occurred.",
     "SHOW_HISTORY_MENU_TEXT": "Your Analysis History:",
     "BUTTON_PREVIOUS": "Previous",
-    "BUTTON_NEXT": "Next"
+    "BUTTON_NEXT": "Next",
+    "LAST_TEN_REPORTS": "Here are the last 10 reports you have run.",
+    "RUN_URL_ANALYSIS_PLACEHOLDER": "Run URL Analysis - Placeholder",
+    "RUN_FILE_ANALYSIS_PLACEHOLDER": "Run File Analysis - Placeholder",
+    "INVALID_DATA_FORMAT": "Error: Invalid data format received.",
+    "HISTORY_IMAGES_SENT": "History images sent."
 }

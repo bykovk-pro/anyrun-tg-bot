@@ -1,6 +1,6 @@
 import logging
 import aiohttp
-from src.lang.director import humanize  # Импортируем humanize для получения текстов
+from src.lang.director import humanize
 
 async def get_analysis_history(api_key: str, limit: int = 10, skip: int = 0):
     url = "https://api.any.run/v1/analysis/"
@@ -12,7 +12,7 @@ async def get_analysis_history(api_key: str, limit: int = 10, skip: int = 0):
         "skip": skip
     }
 
-    logging.debug(f"Fetching analysis history with params: limit={limit}, skip={skip}")
+    logging.debug(f"Making API request to fetch analysis history with params: limit={limit}, skip={skip}")
 
     async with aiohttp.ClientSession() as session:
         try:
@@ -20,7 +20,6 @@ async def get_analysis_history(api_key: str, limit: int = 10, skip: int = 0):
                 logging.debug(f"Received response with status: {response.status}")
                 if response.status == 200:
                     data = await response.json()
-                    logging.debug(f"Data received: {data}")
                     return data.get('data', {}).get('tasks', [])
                 else:
                     error_message = await response.json()
