@@ -20,7 +20,7 @@ async def get_analysis_history(api_key: str, limit: int = 10, skip: int = 0):
                 logging.debug(f"Received response with status: {response.status}")
                 if response.status == 200:
                     data = await response.json()
-                    return data.get('data', {}).get('tasks', [])
+                    return data.get('data', {}).get('analyses', [])
                 else:
                     error_message = await response.json()
                     logging.error(f"Error response: {error_message}")

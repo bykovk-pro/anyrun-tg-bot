@@ -6,6 +6,27 @@ from datetime import datetime, timedelta
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_DIR = os.path.join(PROJECT_ROOT, 'logs')
 
+class DailyRotatingFileHandler(logging.Handler):
+    def __init__(self, filename, mode='a', encoding=None):
+        super().__init__()
+        self.filename = filename
+        self.mode = mode
+        self.encoding = encoding
+        self.current_date = datetime.now().date()
+        self.file_handler = self._get_file_handler()
+
+    def _get_file_handler(self):
+        current_date = datetime.now().strftime("%Y%m%d")
+        log_file = os.path.join(LOG_DIR, f"{current_date}.log")
+        return logging.FileHandler(log_file, mode=self.mode, encoding=self.encoding)
+
+    def emit(self, record):
+        if datetime.now().date() != self.current_date:
+            self.file_handler.close()
+            self.file_handler = self._get_file_handler()
+            self.current_date = datetime.now().date()
+        self.file_handler.emit(record)
+
 def setup_logging(config):
     log_level = config.get_log_level('LOG_LEVEL')
     telegram_log_level = config.get_log_level('TELEGRAM_LOG_LEVEL')
@@ -13,16 +34,13 @@ def setup_logging(config):
     
     os.makedirs(LOG_DIR, exist_ok=True)
     
-    current_date = datetime.now().strftime("%Y%m%d")
-    log_file = os.path.join(LOG_DIR, f"{current_date}.log")
-    
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
     
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
     
-    file_handler = logging.FileHandler(log_file)
+    file_handler = DailyRotatingFileHandler(os.path.join(LOG_DIR, "log"))
     file_handler.setLevel(log_level)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -51,7 +69,7 @@ def setup_logging(config):
     if isinstance(log_level, str):
         log_level = getattr(logging, log_level.upper(), logging.INFO)
     if log_level <= logging.INFO:
-        logging.info(f"Logging setup completed. Log file: {log_file}")
+        logging.info(f"Logging setup completed. Log file: {file_handler.filename}")
         logging.info(f"Application log level: {logging.getLevelName(log_level)}")
         logging.info(f"Telegram log level: {logging.getLevelName(telegram_log_level)}")
 

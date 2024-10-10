@@ -87,8 +87,6 @@
     "UNBAN_USER_PROMPT": "Please enter the Telegram ID of the user you want to unban:",
     "UNKNOWN_OPTION": "Unknown option. Please try again.",
     "URL_ANALYSIS_PROMPT": "Please enter the URL you want to analyze:",
-    "USER_BANNED": "User has been banned successfully.",
-    "USER_DELETED": "User has been deleted successfully.",
     "USER_UNBANNED": "User has been unbanned successfully.",
     "WELCOME_MESSAGE": "Welcome to the ANY.RUN Sandbox API for Telegram! Please use the menu below, type a command or provide a URL to analyze.",
     "YES": "Yes",
@@ -118,5 +116,10 @@
     "RUN_URL_ANALYSIS_PLACEHOLDER": "Run URL Analysis - Placeholder",
     "RUN_FILE_ANALYSIS_PLACEHOLDER": "Run File Analysis - Placeholder",
     "INVALID_DATA_FORMAT": "Error: Invalid data format received.",
-    "HISTORY_IMAGES_SENT": "History images sent."
+    "HISTORY_IMAGES_SENT": "History images sent.",
+    "NO_ANALYSIS_HISTORY": "You don't have any previously run analyses.",
+    "USER_NOT_FOUND": "User not found in the database. Please start the bot with /start command.",
+    "USER_BANNED": "Your account has been banned. Please contact the administrator for more information.",
+    "USER_DELETED": "Your account has been deleted. Please contact the administrator if you believe this is an error.",
+    "NO_ACTIVE_API_KEY": "You don't have an active API key. Please add and activate an API key in the settings menu."
 }

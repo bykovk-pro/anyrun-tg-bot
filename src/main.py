@@ -5,7 +5,7 @@ import asyncio
 from dotenv import load_dotenv
 from src.config import create_config
 from src.utils.logger import setup_logging, view_logs
-from src.utils.director import run, stop_bot, kill_bot
+from src.utils.director import run, stop_bot, kill_bot, is_bot_running
 from src.db.common import get_db_pool
 
 # Загружаем переменные окружения из .env файла
@@ -65,6 +65,11 @@ async def main():
             logging.debug(f"Starting ANY.RUN Sandbox API Bot")
 
         if args.action == 'start':
+            if is_bot_running():
+                message = "Bot is already running. Use 'restart' to restart the bot or 'kill' to force stop all instances."
+                print(message)
+                logging.warning(message)
+                return
             await run(config)
         elif args.action == 'stop':
             success = await stop_bot(config)
@@ -89,11 +94,12 @@ async def main():
             print(f"Error: Unknown action '{args.action}'")
             print_help()
     except Exception as e:
-        logging.exception(f"An unexpected error occurred: {e}")
-        print(f"An unexpected error occurred: {e}")
+        message = f"An unexpected error occurred: {e}"
+        logging.exception(message)
+        print(message)
         print("Check the log file for more information.")
 
-    if args.action in ['start', 'restart']:
+    if args.action in ['start', 'restart'] and not is_bot_running():
         try:
             db = await get_db_pool()
             await db.close()
