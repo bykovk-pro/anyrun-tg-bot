@@ -16,9 +16,14 @@ class DailyRotatingFileHandler(logging.Handler):
         self.file_handler = self._get_file_handler()
 
     def _get_file_handler(self):
-        current_date = datetime.now().strftime("%Y%m%d")
-        log_file = os.path.join(LOG_DIR, f"{current_date}.log")
-        return logging.FileHandler(log_file, mode=self.mode, encoding=self.encoding)
+        log_file = os.path.join(LOG_DIR, f"log_{datetime.now().strftime('%Y-%m-%d')}.txt")
+        handler = logging.FileHandler(log_file, mode=self.mode, encoding=self.encoding)
+        handler.setFormatter(self.formatter)  # Применяем форматтер к внутреннему обработчику
+        return handler
+
+    def setFormatter(self, fmt):
+        super().setFormatter(fmt)
+        self.file_handler.setFormatter(fmt)  # Также устанавливаем форматтер для текущего file_handler
 
     def emit(self, record):
         if datetime.now().date() != self.current_date:
@@ -30,55 +35,47 @@ class DailyRotatingFileHandler(logging.Handler):
 def setup_logging(config):
     log_level = config.get_log_level('LOG_LEVEL')
     telegram_log_level = config.get_log_level('TELEGRAM_LOG_LEVEL')
-    logging.info(f"Setting up logging with levels: LOG_LEVEL={logging.getLevelName(log_level)}, TELEGRAM_LOG_LEVEL={logging.getLevelName(telegram_log_level)}")
+    print(f"Setting up logging with levels: LOG_LEVEL={logging.getLevelName(log_level)}, TELEGRAM_LOG_LEVEL={logging.getLevelName(telegram_log_level)}")
     
     os.makedirs(LOG_DIR, exist_ok=True)
     
     root_logger = logging.getLogger()
-    root_logger.setLevel(log_level)
+    root_logger.setLevel(logging.DEBUG)
     
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
     
     file_handler = DailyRotatingFileHandler(os.path.join(LOG_DIR, "log"))
-    file_handler.setLevel(log_level)
+    file_handler.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s', 
+                                  datefmt='%Y-%m-%d %H:%M:%S')
     file_handler.setFormatter(formatter)
-
     root_logger.addHandler(file_handler)
-    
-    for logger_name in logging.root.manager.loggerDict:
-        if not logger_name.startswith('telegram'):
-            logger = logging.getLogger(logger_name)
-            logger.setLevel(log_level)
-            logger.propagate = False 
-    
-    telegram_loggers = [
-        'telegram', 'telegram.ext', 'telegram.bot', 'telegram.network',
-        'telegram.utils.request', 'telegram.error', 'telegram.ext.Application',
-        'httpx'
-    ]
-    for logger_name in telegram_loggers:
-        logger = logging.getLogger(logger_name)
-        logger.setLevel(telegram_log_level)
-        logger.propagate = False  
 
-    logging.getLogger().setLevel(log_level)
+    # Устанавливаем уровень логирования для основного приложения
+    logging.getLogger('').setLevel(log_level)
 
-    if isinstance(log_level, str):
-        log_level = getattr(logging, log_level.upper(), logging.INFO)
-    if log_level <= logging.INFO:
-        logging.info(f"Logging setup completed. Log file: {file_handler.filename}")
-        logging.info(f"Application log level: {logging.getLevelName(log_level)}")
-        logging.info(f"Telegram log level: {logging.getLevelName(telegram_log_level)}")
+    # Устанавливаем уровень логирования для Telegram-связанных модулей
+    telegram_related_loggers = ['telegram', 'httpcore', 'httpx', 'aiohttp']
+    for logger_name in telegram_related_loggers:
+        logging.getLogger(logger_name).setLevel(telegram_log_level)
+
+    print(f"Logging setup completed. Log file: {file_handler.filename}")
+    print(f"Application log level: {logging.getLevelName(log_level)}")
+    print(f"Telegram-related modules log level: {logging.getLevelName(telegram_log_level)}")
+
+    # Добавим тестовые логи для проверки
+    logging.info("Main application logging initialized")
+    for logger_name in telegram_related_loggers:
+        logging.getLogger(logger_name).info(f"{logger_name} logging initialized")
 
 def view_logs(lines=50, days=7, follow=False):
     log_files = []
     
     for i in range(days):
-        date = (datetime.now() - timedelta(days=i)).strftime("%Y%m%d")
-        log_file = os.path.join(LOG_DIR, f"{date}.log")
+        date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        log_file = os.path.join(LOG_DIR, f"log_{date}.txt")
         if os.path.exists(log_file):
             log_files.append(log_file)
     

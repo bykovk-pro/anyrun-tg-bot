@@ -77,13 +77,7 @@ async def _show_history(update: Update, context: ContextTypes.DEFAULT_TYPE, api_
     user_id = update.effective_user.id
     logging.debug(f"User ID: {user_id} requesting history.")
 
-    api_key, error_message = await check_user_and_api_key(user_id)
-
-    if error_message:
-        await update.callback_query.answer(text=error_message)
-        logging.error(f"Error checking API key: {error_message}")
-        return
-
+    # Remove redundant API key check
     limit = 10
     skip = 0
     logging.debug(f"Fetching analysis history with params: limit={limit}, skip={skip}")
