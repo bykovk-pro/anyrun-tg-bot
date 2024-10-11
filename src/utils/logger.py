@@ -35,7 +35,10 @@ class DailyRotatingFileHandler(logging.Handler):
 def setup_logging(config):
     log_level = config.get_log_level('LOG_LEVEL')
     telegram_log_level = config.get_log_level('TELEGRAM_LOG_LEVEL')
-    print(f"Setting up logging with levels: LOG_LEVEL={logging.getLevelName(log_level)}, TELEGRAM_LOG_LEVEL={logging.getLevelName(telegram_log_level)}")
+    sqlite_log_level = config.get_log_level('SQLITE_LOG_LEVEL')
+    print(f"Setting up logging with levels: LOG_LEVEL={logging.getLevelName(log_level)}, "
+          f"TELEGRAM_LOG_LEVEL={logging.getLevelName(telegram_log_level)}, "
+          f"SQLITE_LOG_LEVEL={logging.getLevelName(sqlite_log_level)}")
     
     os.makedirs(LOG_DIR, exist_ok=True)
     
@@ -61,14 +64,19 @@ def setup_logging(config):
     for logger_name in telegram_related_loggers:
         logging.getLogger(logger_name).setLevel(telegram_log_level)
 
+    # Устанавливаем уровень логирования для SQLite
+    logging.getLogger('aiosqlite').setLevel(sqlite_log_level)
+
     print(f"Logging setup completed. Log file: {file_handler.filename}")
     print(f"Application log level: {logging.getLevelName(log_level)}")
     print(f"Telegram-related modules log level: {logging.getLevelName(telegram_log_level)}")
+    print(f"SQLite log level: {logging.getLevelName(sqlite_log_level)}")
 
     # Добавим тестовые логи для проверки
     logging.info("Main application logging initialized")
     for logger_name in telegram_related_loggers:
         logging.getLogger(logger_name).info(f"{logger_name} logging initialized")
+    logging.getLogger('aiosqlite').info("SQLite logging initialized")
 
 def view_logs(lines=50, days=7, follow=False):
     log_files = []

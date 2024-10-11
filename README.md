@@ -9,7 +9,7 @@ This Telegram bot provides a user-friendly interface to interact with the ANY.RU
 - Check the status of ongoing analyses
 - Manage API keys within the Telegram interface
 - Automatic language detection and support
-- Flexible logging system with adjustable log levels
+- Flexible logging system with adjustable log levels for different components
 - Asynchronous database operations for improved performance
 - Secure database backup with password protection
 - Admin panel for user management and system operations
@@ -44,10 +44,11 @@ For detailed usage instructions and available commands, start a chat with the bo
    ```
    TELEGRAM_TOKEN=<your_telegram_token>
    TELEGRAM_ADMIN_ID=<your_telegram_admin_id>
+   REQUIRED_GROUP_IDS=<comma_separated_group_ids>
    LOG_LEVEL=<your_log_level>
    TELEGRAM_LOG_LEVEL=<your_telegram_log_level>
-   REQUIRED_GROUP_IDS=<comma_separated_group_ids>
-   DB_BACKUP_PASSWORD=<your_backup_password>
+   SQLITE_LOG_LEVEL=<your_sqlite_log_level>
+   DB_PASSWORD=<your_backup_password>
    ```
 
    Note: Make sure to replace the placeholder values with your actual values.
@@ -56,9 +57,18 @@ For detailed usage instructions and available commands, start a chat with the bo
 
 To run the bot, use the following command:
 ```
-python main.py start
+python -m src.main start
 ```
 The bot will start and run in the foreground. For production use, consider using a process manager to run the bot as a background service.
+
+## Logging
+
+The bot uses a flexible logging system with adjustable log levels for different components:
+- `LOG_LEVEL`: Controls the log level for the main application
+- `TELEGRAM_LOG_LEVEL`: Controls the log level for Telegram-related modules
+- `SQLITE_LOG_LEVEL`: Controls the log level for SQLite database operations
+
+Logs are automatically rotated daily for easy management.
 
 ## Localization
 
@@ -84,6 +94,7 @@ The bot includes an admin panel accessible to authorized users. Admin features i
 - User management (ban/unban users)
 - Database backup
 - Bot status checks
+- Log viewing and management
 
 ## Contributing
 
@@ -91,4 +102,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.# Test comment
+This project is licensed under the MIT License - see the LICENSE file for details.
