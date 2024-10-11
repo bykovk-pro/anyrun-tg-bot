@@ -1,8 +1,8 @@
 import logging
 import aiohttp
 from src.api.security import check_user_groups, check_user_api_keys, rate_limiter
-from src.lang.director import humanize  # Импортируем humanize для получения текстов
-import json  # Import json for handling non-JSON responses
+from src.lang.director import humanize
+import json
 
 async def get_api_limits(bot, user_id, required_group_ids):
     if not await check_user_groups(bot, user_id, required_group_ids):
@@ -11,13 +11,10 @@ async def get_api_limits(bot, user_id, required_group_ids):
     if not await check_user_api_keys(user_id):
         return "You do not have any active API keys."
 
-    if not await rate_limiter(user_id):  # Use await here
+    if not await rate_limiter(user_id):
         return "Rate limit exceeded. Please wait before making another request."
 
-    # Call the remote API to get the limits
-    # Example: response = await call_remote_api_to_get_limits()
-    # return response
-    return "API limits retrieved successfully."  # Placeholder response
+    return "API limits retrieved successfully."
 
 async def get_user_limits(api_key: str):
     url = "https://api.any.run/v1/user"
@@ -45,8 +42,8 @@ async def get_user_limits(api_key: str):
                     )
                 else:
                     try:
-                        error_message = await response.json()  # Attempt to parse JSON
-                    except ValueError:  # Handle case where response is not JSON
+                        error_message = await response.json()
+                    except ValueError:
                         error_message = {"message": "Response is not valid JSON"}
                     return {"error": error_message.get("message", humanize("UNKNOWN_ERROR"))}
         except Exception as e:

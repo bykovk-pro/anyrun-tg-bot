@@ -5,17 +5,14 @@ async def db_add_api_key(telegram_id: int, api_key: str, key_name: str):
     db = await get_db_pool()
     try:
         async with db.cursor() as cursor:
-            # Проверяем, существует ли уже такой ключ
             await cursor.execute('SELECT 1 FROM api_keys WHERE api_key = ?', (api_key,))
             if await cursor.fetchone():
                 return False, "API_KEY_ALREADY_EXISTS"
             
-            # Деактивируем все существующие ключи пользователя
             await cursor.execute('''
                 UPDATE api_keys SET is_active = FALSE
                 WHERE telegram_id = ?
             ''', (telegram_id,))
-            # Добавляем новый ключ как активный
             await cursor.execute('''
                 INSERT INTO api_keys (telegram_id, api_key, key_name, is_active)
                 VALUES (?, ?, ?, TRUE)
@@ -30,12 +27,10 @@ async def db_add_api_key(telegram_id: int, api_key: str, key_name: str):
 async def db_delete_api_key(telegram_id: int, api_key: str):
     db = await get_db_pool()
     async with db.cursor() as cursor:
-        # Удаляем ключ
         await cursor.execute('''
             DELETE FROM api_keys
             WHERE telegram_id = ? AND api_key = ?
         ''', (telegram_id, api_key))
-        # Если это был активный ключ, активируем другой (если есть)
         await cursor.execute('''
             UPDATE api_keys SET is_active = TRUE
             WHERE telegram_id = ? AND api_key = (
@@ -70,12 +65,10 @@ async def db_change_api_key_name(telegram_id: int, api_key: str, new_key_name: s
 async def db_set_active_api_key(telegram_id: int, api_key: str):
     db = await get_db_pool()
     async with db.cursor() as cursor:
-        # Деактивируем все ключи пользователя
         await cursor.execute('''
             UPDATE api_keys SET is_active = FALSE
             WHERE telegram_id = ?
         ''', (telegram_id,))
-        # Активируем выбранный ключ
         await cursor.execute('''
             UPDATE api_keys SET is_active = TRUE
             WHERE telegram_id = ? AND api_key = ?

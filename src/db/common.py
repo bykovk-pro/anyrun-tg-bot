@@ -2,10 +2,8 @@ import os
 import aiosqlite
 import logging
 
-# Получаем абсолютный путь к корневой директории проекта
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Определяем DB_FILE с использованием абсолютного пути
 DB_FILE = os.path.join(ROOT_DIR, 'anyrun-tg-bot.db')
 
 async def get_db():

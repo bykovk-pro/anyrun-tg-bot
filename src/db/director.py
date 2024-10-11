@@ -47,7 +47,7 @@ async def init_database():
         logging.critical(f"Error initializing database: {e}")
         raise
 
-async def backup(config): # TODO: В архив не попадает файл с базой данных
+async def backup(config):
     try:
         if not os.path.exists(DB_FILE):
             logging.error(f"Database file does not exist: {DB_FILE}")

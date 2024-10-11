@@ -86,13 +86,11 @@ async def show_api_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.callback_query.message.reply_text(keys_text)
 
-    # Создаем кнопку "Back to Settings"
     keyboard = [
         [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='settings')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Отправляем кнопку
     await update.callback_query.message.reply_text(humanize("CHOOSE_OPTION"), reply_markup=reply_markup)
 
 async def add_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -184,7 +182,6 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         input_text = update.message.text.strip()
         
-        # Разделяем ввод на API ключ и имя ключа
         match = re.match(r'^(\S+)\s*(.*)$', input_text)
         if match:
             new_key = match.group(1)
@@ -193,12 +190,10 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             new_key = input_text
             key_name = ""
         
-        # Если имя ключа не предоставлено или пустое, генерируем его
         if not key_name:
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             key_name = f"New API Key {timestamp}"
         
-        # Валидация имени ключа (удаляем недопустимые символы)
         key_name = re.sub(r'[^\w\s-]', '', key_name).strip()
         if not key_name:
             key_name = "Unnamed Key"
@@ -212,7 +207,6 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await update.message.reply_text(humanize("ERROR_ADDING_API_KEY"))
         
-        # Отпрвляем новое сообщение с меню
         menu_text = humanize("MANAGE_API_KEY_MENU_TEXT")
         reply_markup = create_manage_api_key_menu()
         await update.message.reply_text(menu_text, reply_markup=reply_markup)
@@ -222,7 +216,6 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         api_key = context.user_data.get('api_key_to_rename')
         new_name = update.message.text.strip()
         
-        # Валидация нового имени ключа
         new_name = re.sub(r'[^\w\s-]', '', new_name).strip()
         if not new_name:
             new_name = "Unnamed Key"
@@ -231,7 +224,6 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await db_change_api_key_name(user_id, api_key, new_name)
             await update.message.reply_text(humanize("API_KEY_RENAMED"))
             
-            # Отправляем новое сообщение с меню
             menu_text = humanize("MANAGE_API_KEY_MENU_TEXT")
             reply_markup = create_manage_api_key_menu()
             await update.message.reply_text(menu_text, reply_markup=reply_markup)

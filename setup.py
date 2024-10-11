@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="anyrun-tg-bot",
-    version="0.5.2",  # Здесь можно указать фиксированную версию или использовать другой метод версионирования
+    version="0.5.3",
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     author="Kirill Bykov",

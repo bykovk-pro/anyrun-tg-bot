@@ -8,7 +8,6 @@ from src.utils.logger import setup_logging, view_logs
 from src.utils.director import run, stop_bot, kill_bot, is_bot_running
 from src.db.common import get_db_pool
 
-# Загружаем переменные окружения из .env файла
 load_dotenv()
 
 def print_help():
@@ -61,8 +60,8 @@ async def main():
 
     try:
         if args.action in ['start', 'restart']:
-            logging.debug("- * " * 12)
-            logging.debug(f"Starting ANY.RUN Sandbox API Bot")
+            logging.info("- * " * 12)
+            logging.info(f"Starting ANY.RUN Sandbox API Bot")
 
         if args.action == 'start':
             if is_bot_running():

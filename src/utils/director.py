@@ -50,7 +50,7 @@ async def run(config):
     with open(PID_FILE, 'w') as f:
         f.write(str(os.getpid()))
     
-    os.environ[BOT_ENV_VAR] = '1'  # Set the environment variable
+    os.environ[BOT_ENV_VAR] = '1'
     
     try:
         application = await initialize_application(config)
@@ -65,7 +65,7 @@ async def run(config):
     finally:
         if os.path.exists(PID_FILE):
             os.remove(PID_FILE)
-        os.environ.pop(BOT_ENV_VAR, None)  # Remove the environment variable
+        os.environ.pop(BOT_ENV_VAR, None)
 
 async def get_status():
     try:
@@ -130,16 +130,13 @@ async def stop_bot(config):
 
 def is_our_bot_process(proc):
     try:
-        # Check process name
         if BOT_PROCESS_NAME not in proc.name().lower():
             return False
         
-        # Check command line arguments
         cmdline = ' '.join(proc.cmdline())
         if BOT_SCRIPT_NAME not in cmdline:
             return False
         
-        # Exclude processes running with 'logs' command
         if 'logs' in cmdline:
             return False
         
@@ -150,7 +147,6 @@ def is_our_bot_process(proc):
 def kill_bot(config):
     killed_processes = []
     
-    # First, check the PID file
     if os.path.exists(PID_FILE):
         try:
             with open(PID_FILE, 'r') as f:
@@ -164,7 +160,6 @@ def kill_bot(config):
         except (ValueError, psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
             logging.warning(f"Failed to terminate process from PID file")
     
-    # Then, search for other possible bot processes
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
             if is_our_bot_process(proc):
@@ -175,7 +170,6 @@ def kill_bot(config):
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
             pass
 
-    # If any processes were terminated, remove the PID file
     if killed_processes:
         logging.info(f"Terminated bot processes with PIDs: {', '.join(map(str, killed_processes))}")
         if os.path.exists(PID_FILE):

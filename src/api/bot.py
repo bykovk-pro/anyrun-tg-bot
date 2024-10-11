@@ -42,23 +42,19 @@ async def set_log_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_manage_bot_menu(update, context)
 
 async def show_bot_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Здесь должна быть логика получения последних 50 строк логов
     logs = "Last 50 lines of bot logs will be shown here"
     await update.callback_query.edit_message_text(logs)
-    # Добавить кнопку "Назад"
     keyboard = [[InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_bot')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.callback_query.edit_message_text(logs, reply_markup=reply_markup)
 
 async def show_bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Здесь должна быть логика получения статистики бота
     stats = "Bot statistics will be shown here"
     keyboard = [[InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_bot')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.callback_query.edit_message_text(stats, reply_markup=reply_markup)
 
 async def show_system_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Здесь должна быть логика получения системной информации
     system_info = "System information will be shown here"
     keyboard = [[InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_bot')]]
     reply_markup = InlineKeyboardMarkup(keyboard)

@@ -7,7 +7,6 @@ import time
 from src.db.users import db_get_user, db_is_user_admin
 from src.db.api_keys import db_get_api_keys
 
-# Rate limiter
 last_api_call_time = {}
 
 def setup_telegram_security(token) -> str:
@@ -63,7 +62,6 @@ async def check_in_groups(bot: Bot, check_id: int, is_bot: bool = False, require
                 groups_info[group_id] = (user_is_member, chat, bot_is_member)
         except TelegramError as e:
             logging.error(f'Error getting info for group {group_id}: {str(e)}')
-            # Попытка получить информацию о публичной группе
             try:
                 public_chat = await bot.get_chat(f"@any_run_community")
                 if public_chat and public_chat.id == group_id:
@@ -77,17 +75,18 @@ async def check_in_groups(bot: Bot, check_id: int, is_bot: bool = False, require
 
 async def check_user_groups(bot: Bot, user_id: int, required_group_ids: str):
     if await db_is_user_admin(user_id):
-        return True  # Admins are exempt from group checks
+        return True
 
     user = await db_get_user(user_id)
     if not user:
         logging.warning(f"User {user_id} not found in the database.")
         return False
 
-    # Check if user is in required groups
     groups_info = await check_in_groups(bot, user_id, is_bot=False, required_group_ids=required_group_ids)
-    # Check if the user is in any of the required groups
-    return any(info[0] for info in groups_info.values())  # {{ edit_1 }}
+    if not any(info[0] for info in groups_info.values()):
+        logging.warning(f"User {user_id} is not in any required groups.")
+        return False
+    return True
 
 async def check_user_api_keys(user_id: int):
     api_keys = await db_get_api_keys(user_id)
@@ -95,28 +94,26 @@ async def check_user_api_keys(user_id: int):
         logging.warning(f"No API keys found for user {user_id}.")
         return False
 
-    # Check if at least one API key is active
-    return any(key[2] for key in api_keys)  # Assuming the third element is is_active
+    return any(key[2] for key in api_keys)
 
 async def rate_limiter(user_id: int):
     if await db_is_user_admin(user_id):
-        return True  # Admins are exempt from rate limiting
+        return True
 
     global last_api_call_time
     current_time = time.time()
     if user_id in last_api_call_time:
         if current_time - last_api_call_time[user_id] < 30:
-            return False  # Rate limit exceeded
+            return False
     last_api_call_time[user_id] = current_time
     return True
 
 async def check_user_and_api_key(user_id: int):
     api_keys = await db_get_api_keys(user_id)
 
-    # Получаем активный API ключ
-    active_api_key = next((key for key in api_keys if key[2]), None)  # Assuming the third element is is_active
+    active_api_key = next((key for key in api_keys if key[2]), None)
 
     if not active_api_key:
         return None, "You do not have any active API keys."
 
-    return active_api_key[0], None  # Возвращаем активный API ключ и сообщение об ошибке
+    return active_api_key[0], None

@@ -18,12 +18,12 @@ class DailyRotatingFileHandler(logging.Handler):
     def _get_file_handler(self):
         log_file = os.path.join(LOG_DIR, f"log_{datetime.now().strftime('%Y-%m-%d')}.txt")
         handler = logging.FileHandler(log_file, mode=self.mode, encoding=self.encoding)
-        handler.setFormatter(self.formatter)  # Применяем форматтер к внутреннему обработчику
+        handler.setFormatter(self.formatter)
         return handler
 
     def setFormatter(self, fmt):
         super().setFormatter(fmt)
-        self.file_handler.setFormatter(fmt)  # Также устанавливаем форматтер для текущего file_handler
+        self.file_handler.setFormatter(fmt)
 
     def emit(self, record):
         if datetime.now().date() != self.current_date:
@@ -51,20 +51,16 @@ def setup_logging(config):
     file_handler = DailyRotatingFileHandler(os.path.join(LOG_DIR, "log"))
     file_handler.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s', 
-                                  datefmt='%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
 
-    # Устанавливаем уровень логирования для основного приложения
     logging.getLogger('').setLevel(log_level)
 
-    # Устанавливаем уровень логирования для Telegram-связанных модулей
     telegram_related_loggers = ['telegram', 'httpcore', 'httpx', 'aiohttp']
     for logger_name in telegram_related_loggers:
         logging.getLogger(logger_name).setLevel(telegram_log_level)
 
-    # Устанавливаем уровень логирования для SQLite
     logging.getLogger('aiosqlite').setLevel(sqlite_log_level)
 
     print(f"Logging setup completed. Log file: {file_handler.filename}")
@@ -72,7 +68,6 @@ def setup_logging(config):
     print(f"Telegram-related modules log level: {logging.getLevelName(telegram_log_level)}")
     print(f"SQLite log level: {logging.getLevelName(sqlite_log_level)}")
 
-    # Добавим тестовые логи для проверки
     logging.info("Main application logging initialized")
     for logger_name in telegram_related_loggers:
         logging.getLogger(logger_name).info(f"{logger_name} logging initialized")
@@ -99,10 +94,10 @@ def view_logs(lines=50, days=7, follow=False):
     else:
         latest_log_file = log_files[0]
         with open(latest_log_file, 'r') as f:
-            f.seek(0, 2)  # Go to the end of the file
+            f.seek(0, 2)
             while True:
                 line = f.readline()
                 if line:
                     print(line, end='')
                 else:
-                    time.sleep(0.1)  # Sleep briefly to avoid busy waiting
+                    time.sleep(0.1)

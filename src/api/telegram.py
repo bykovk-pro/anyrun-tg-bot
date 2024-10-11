@@ -18,13 +18,13 @@ def get_user_language(user: User) -> str:
 set_user_language_getter(get_user_language)
 
 def is_url(text: str) -> bool:
-    # Регулярное выражение для проверки URL
+
     url_pattern = re.compile(
-        r'^((?:https?:\/\/)?'  # протокол (опционально)
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # домен
-        r'localhost|'  # localhost
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # IP адрес
-        r'(?::\d+)?'  # порт (опционально)
+        r'^((?:https?:\/\/)?'
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
+        r'localhost|'
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+        r'(?::\d+)?'
         r'(?:/?|[/?]\S+))$', re.IGNORECASE)
     
     return bool(url_pattern.match(text))
@@ -33,17 +33,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         set_language_for_user(update.effective_user)
         message_text = update.message.text
-        
-        # Проверяем, ожидает ли бот ввода для конкретного действия
+
         next_action = context.user_data.get('next_action')
         if next_action:
-            # Если ожидается действие, передаем управление в соответствующий обработчик
             await settings_handle_text_input(update, context)
         elif is_url(message_text):
-            # Если это URL, запускаем анализ
             await run_url_analysis(update, context)
         else:
-            # Если это не URL и нет ожидаемого действия, отправляем сообщение о неверном вводе
             invalid_input_message = humanize("INVALID_INPUT")
             await update.message.reply_text(invalid_input_message)
             await show_main_menu(update, context)
@@ -80,15 +76,12 @@ async def setup_telegram_bot(config):
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         application.add_handler(CommandHandler("menu", show_main_menu))
         
-        # Импортируем setup_handlers здесь, чтобы избежать циклического импорта
         from src.api.handlers import setup_handlers
         setup_handlers(application)
         
         application.add_error_handler(handle_telegram_error)
         
         logging.debug('Command handlers added successfully')
-        
-        logging.info('Telegram bot setup completed')
         return application
     except Exception as e:
         logging.exception(f'Error during Telegram bot setup: {e}')
@@ -98,7 +91,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logging.debug(f'User started the bot: user_id={update.effective_user.id}')
     set_language_for_user(update.effective_user)
     
-    # Добавляем или обновляем пользователя в базе данных
     try:
         await db_add_user(update.effective_user.id)
     except Exception as e:

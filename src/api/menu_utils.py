@@ -27,5 +27,3 @@ def create_help_menu():
         [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='main_menu')]
     ]
     return InlineKeyboardMarkup(keyboard)
-
-# Добавьте другие функции для создания меню, если это необходимо
