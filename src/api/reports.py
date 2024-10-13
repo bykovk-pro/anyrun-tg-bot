@@ -130,28 +130,38 @@ def create_report_menu_keyboard(report):
         [InlineKeyboardButton(humanize("ANALYSIS_IN_SANDBOX"), url=report.get("permanentUrl", ""))]
     ]
 
-    video_url = report.get("content", {}).get("video", {}).get("permanentUrl")
-    if video_url:
-        keyboard.append([InlineKeyboardButton(humanize("SHOW_RECORDED_VIDEO"), callback_data='show_recorded_video')])
+    media_row = []
+    if report.get("content", {}).get("video", {}).get("permanentUrl"):
+        media_row.append(InlineKeyboardButton(humanize("SHOW_RECORDED_VIDEO"), callback_data='show_recorded_video'))
+    if report.get("content", {}).get("screenshots", []):
+        media_row.append(InlineKeyboardButton(humanize("SHOW_CAPTURED_SCREENSHOTS"), callback_data='show_captured_screenshots'))
+    if media_row:
+        keyboard.append(media_row)
 
-    screenshots = report.get("content", {}).get("screenshots", [])
-    if screenshots:
-        keyboard.append([InlineKeyboardButton(humanize("SHOW_CAPTURED_SCREENSHOTS"), callback_data='show_captured_screenshots')])
+    text_row = []
+    text_row.append(InlineKeyboardButton(humanize("REPORT_ANYRUN"), url=f"https://api.any.run/report/{report.get('uuid', '')}/summary/json"))
+    text_row.append(InlineKeyboardButton(humanize("TEXT_REPORT"), url=f"https://any.run/report/{report.get('content', {}).get('mainObject', {}).get('hashes', {}).get('sha256', '')}/{report.get('uuid', '')}"))
+    text_row.append(InlineKeyboardButton(humanize("REPORT_HTML"), url=report.get("reports", {}).get("HTML", "")))
+    if text_row:
+        keyboard.append(text_row)
 
-    keyboard.extend([
-        [InlineKeyboardButton(humanize("TEXT_REPORT"), url=f"https://any.run/report/{report.get('content', {}).get('mainObject', {}).get('hashes', {}).get('sha256', '')}/{report.get('uuid', '')}")],
-        [InlineKeyboardButton(humanize("REPORT_HTML"), url=report.get("reports", {}).get("HTML", ""))],
-        [InlineKeyboardButton(humanize("REPORT_ANYRUN"), url=f"https://api.any.run/report/{report.get('uuid', '')}/summary/json")],
-        [InlineKeyboardButton(humanize("REPORT_STIX"), url=report.get("reports", {}).get("STIX", ""))],
-        [InlineKeyboardButton(humanize("REPORT_MISP"), url=report.get("reports", {}).get("MISP", ""))],
-        [InlineKeyboardButton(humanize("ALL_IOC"), url=report.get("reports", {}).get("IOC", ""))]
-    ])
+    report_row = []
+    if report.get("reports", {}).get("IOC"):
+        report_row.append(InlineKeyboardButton(humanize("ALL_IOC"), url=report.get("reports", {}).get("IOC", "")))
+    if report.get("reports", {}).get("STIX"):
+        report_row.append(InlineKeyboardButton(humanize("REPORT_STIX"), url=report.get("reports", {}).get("STIX", "")))
+    if report.get("reports", {}).get("MISP"):
+        report_row.append(InlineKeyboardButton(humanize("REPORT_MISP"), url=report.get("reports", {}).get("MISP", "")))
+    if report_row:
+        keyboard.append(report_row)
 
-    if report.get("mainObject", {}).get("type") == "file":
-        keyboard.append([InlineKeyboardButton(humanize("DOWNLOAD_SAMPLE"), url=report.get("mainObject", {}).get("permanentUrl", ""))])
-
-    if report.get("pcap", {}).get("present") == "true":
-        keyboard.append([InlineKeyboardButton(humanize("DOWNLOAD_PCAP"), url=report["pcap"]["permanentUrl"])])
+    download_row = []
+    if report.get("content", {}).get("mainObject", {}).get("type") == "file":
+        download_row.append(InlineKeyboardButton(humanize("DOWNLOAD_SAMPLE"), url=report.get("content", {}).get("mainObject", {}).get("permanentUrl", "")))
+    if report.get("content", {}).get("pcap", {}).get("present"):
+        download_row.append(InlineKeyboardButton(humanize("DOWNLOAD_PCAP"), url=report.get("content", {}).get("pcap", {}).get("permanentUrl", "")))
+    if download_row:
+        keyboard.append(download_row)
 
     keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='sandbox_api')])
 
