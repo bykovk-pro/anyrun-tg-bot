@@ -88,7 +88,7 @@
     "UNKNOWN_OPTION": "Unknown option. Please try again.",
     "URL_ANALYSIS_PROMPT": "Please enter the URL you want to analyze:",
     "USER_UNBANNED": "User has been unbanned successfully.",
-    "WELCOME_MESSAGE": "Welcome to the ANY.RUN for Telegram! Please use the menu below, type a command or provide a URL to analyze.",
+    "WELCOME_MESSAGE": "Welcome to the ANY.RUN for Telegram! Please use the menu below or type a command to interact with ANY.RUN.",
     "YES": "Yes",
     "YOUR_API_KEYS": "Your API Keys:",
     "API_KEY_ALREADY_EXISTS": "This API key already exists. Please try a different one.",

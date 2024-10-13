@@ -1,6 +1,6 @@
-# ANY.RUN Sandbox API for Telegram
+# ANY.RUN for Telegram
 
-This Telegram bot provides a user-friendly interface to interact with the ANY.RUN Sandbox API. It allows users to submit files and URLs for analysis, retrieve analysis results, and perform various operations with the ANY.RUN service directly through Telegram.
+This Telegram bot provides a user-friendly interface to interact with the ANY.RUN API. It allows users to submit files and URLs for analysis, retrieve analysis results, and perform various operations with the ANY.RUN service directly through Telegram.
 
 ## Key Features:
 
@@ -18,7 +18,7 @@ This bot simplifies the process of using ANY.RUN's powerful malware analysis cap
 
 ## Getting Started
 
-Follow the setup instructions in this README to configure and run the bot. Once running, you can interact with the ANY.RUN Sandbox API using simple Telegram commands.
+Follow the setup instructions in this README to configure and run the bot. Once running, you can interact with the ANY.RUN API using simple Telegram commands.
 
 For detailed usage instructions and available commands, start a chat with the bot and use the /help command.
 

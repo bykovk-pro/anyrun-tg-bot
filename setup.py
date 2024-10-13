@@ -10,10 +10,10 @@ setup(
     setup_requires=['setuptools_scm'],
     author="Kirill Bykov",
     author_email="me@bykovk.pro",
-    description="A Telegram bot for interacting with the ANY.RUN Sandbox API",
+    description="A Telegram bot for interacting with the ANY.RUN API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/bykovk-pro/ANY.RUN-Sandbox-Telegram-Bot",
+    url="https://github.com/bykovk-pro/ANY.RUN-for-Telegram",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",

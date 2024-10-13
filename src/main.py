@@ -12,7 +12,7 @@ load_dotenv()
 
 def print_help():
     help_text = """
-    ANY.RUN Sandbox API Bot Service
+    ANY.RUN for Telegram
 
     Usage:
       python3 -m src.main [action] [options]
@@ -39,7 +39,7 @@ def print_help():
     print(help_text)
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Manage the ANY.RUN Sandbox API bot service.', add_help=False)
+    parser = argparse.ArgumentParser(description='Manage the ANY.RUN for Telegram.', add_help=False)
     parser.add_argument('action', nargs='?', default='start', choices=['start', 'stop', 'restart', 'kill', 'logs', 'help'], help='Action to perform (default: start)')
     parser.add_argument('--lines', type=int, default=50, help='Number of log lines to view')
     parser.add_argument('--follow', action='store_true', help='Continuously follow the log output')
@@ -61,7 +61,7 @@ async def main():
     try:
         if args.action in ['start', 'restart']:
             logging.info("- * " * 12)
-            logging.info(f"Starting ANY.RUN Sandbox API Bot")
+            logging.info(f"Starting ANY.RUN for Telegram")
 
         if args.action == 'start':
             if is_bot_running():
