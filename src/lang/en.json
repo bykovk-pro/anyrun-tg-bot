@@ -152,5 +152,8 @@
     "SHOW_RECORDED_VIDEO": "Recorded video",
     "SHOW_CAPTURED_SCREENSHOTS": "Captured screenshots",
     "REPORT_LOADING": "Please wait while the report is being loaded. This may take a few moments.",
-    "API_KEY_NOT_FOUND": "API key not found. Please add an API key in the settings menu."
+    "API_KEY_NOT_FOUND": "API key not found. Please add an API key in the settings menu.",
+    "MENU_BUTTON_THREAT_INTELLIGENCE": "Threat Intelligence API",
+    "THREAT_INTELLIGENCE_MENU_TEXT": "Threat Intelligence API Menu",
+    "MENU_BUTTON_THREAT_INTELLIGENCE_SERVICE": "Threat Intelligence Service"
 }

@@ -32,6 +32,7 @@ from src.api.users import (
 from src.api.reports import handle_text_input as reports_handle_text_input, handle_show_recorded_video, handle_show_captured_screenshots
 from src.lang.director import humanize
 import logging
+from src.api.threat_intelligence import show_threat_intelligence_menu
 
 
 def setup_handlers(application: Application):
@@ -85,6 +86,8 @@ def setup_handlers(application: Application):
 
     application.add_handler(CallbackQueryHandler(handle_show_recorded_video, pattern='^show_recorded_video$'))
     application.add_handler(CallbackQueryHandler(handle_show_captured_screenshots, pattern='^show_captured_screenshots$'))
+
+    application.add_handler(CallbackQueryHandler(show_threat_intelligence_menu, pattern='^threat_intelligence$'))
 
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_action = context.user_data.get('next_action')

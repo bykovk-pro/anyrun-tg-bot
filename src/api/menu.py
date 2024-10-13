@@ -3,10 +3,12 @@ from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.users import db_is_user_admin
 from src.api.menu_utils import create_sandbox_api_menu, create_admin_menu, create_help_menu
+from src.api.threat_intelligence import show_threat_intelligence_menu
 
 def create_main_menu():
     keyboard = [
         [InlineKeyboardButton(humanize("MENU_BUTTON_SANDBOX_API"), callback_data='sandbox_api')],
+        [InlineKeyboardButton(humanize("MENU_BUTTON_THREAT_INTELLIGENCE"), callback_data='threat_intelligence')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_SETTINGS"), callback_data='settings')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_HELP"), callback_data='help')]
     ]
