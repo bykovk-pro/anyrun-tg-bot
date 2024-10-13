@@ -40,10 +40,12 @@ async def check_in_groups(bot: Bot, check_id: int, is_bot: bool = False, require
         logging.warning('No valid required group IDs found after parsing')
         return {}
     
+    logging.debug(f"Checking if bot is in required groups: {required_group_ids}")
     groups_info = {}
     for group_id in required_group_ids:
         try:
             chat = await bot.get_chat(chat_id=group_id)
+            logging.debug(f"Bot is in group: {chat.title} (ID: {group_id})")
             bot_is_member = True
             try:
                 bot_member = await bot.get_chat_member(chat_id=group_id, user_id=bot.id)
@@ -61,7 +63,7 @@ async def check_in_groups(bot: Bot, check_id: int, is_bot: bool = False, require
                     user_is_member = False
                 groups_info[group_id] = (user_is_member, chat, bot_is_member)
         except TelegramError as e:
-            logging.error(f'Error getting info for group {group_id}: {str(e)}')
+            logging.warning(f"Bot is not in group with ID: {group_id}. Error: {e}")
             try:
                 public_chat = await bot.get_chat(f"@any_run_community")
                 if public_chat and public_chat.id == group_id:

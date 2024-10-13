@@ -48,10 +48,12 @@ async def setup_telegram_bot(config):
         await application.bot.initialize()
         
         bot_in_groups = await check_in_groups(application.bot, application.bot.id, is_bot=True, required_group_ids=required_group_ids)
-        logging.debug(f'Groups check result: {bot_in_groups}')
         
-        if bot_in_groups is not True:
-            logging.warning(f'Bot is not in all required groups. Missing groups: {bot_in_groups}')
+        # Проверяем, что бот состоит во всех требуемых группах
+        if not all(info[0] for info in bot_in_groups.values()):
+            logging.warning(f'Bot is not in all required groups. Missing groups: {list(bot_in_groups.keys())[:200]}')
+        else:
+            logging.debug('Bot is in all required groups.')
         
         logging.debug('Adding command handlers')
         application.add_handler(CommandHandler("start", start))
