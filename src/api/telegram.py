@@ -7,28 +7,11 @@ from src.lang.director import humanize
 from src.api.security import setup_telegram_security, check_in_groups
 from src.api.menu import show_main_menu, create_main_menu
 from src.db.users import db_add_user
-from src.api.reports import handle_text_input
 
 def get_user_language(user: User) -> str:
     return user.language_code if user.language_code else 'en'
 
 set_user_language_getter(get_user_language)
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    try:
-        set_language_for_user(update.effective_user)
-        message_text = update.message.text
-
-        next_action = context.user_data.get('next_action')
-        if next_action:
-            await handle_text_input(update, context)
-        else:
-            await update.message.reply_text(humanize("UNKNOWN_COMMAND"))
-            await show_main_menu(update, context)
-        
-        logging.debug(f'User sent a message: user_id={update.effective_user.id}, message={message_text}')
-    except Exception as e:
-        logging.error(f'Error in handle_message: {str(e)}, user_id={update.effective_user.id}, message={update.message.text}')
 
 async def setup_telegram_bot(config):
     TOKEN = config.get('TELEGRAM_TOKEN')
@@ -57,7 +40,6 @@ async def setup_telegram_bot(config):
         
         logging.debug('Adding command handlers')
         application.add_handler(CommandHandler("start", start))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         application.add_handler(CommandHandler("menu", show_main_menu))
         
         from src.api.handlers import setup_handlers

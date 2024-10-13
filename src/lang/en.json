@@ -74,7 +74,6 @@
     "NO_API_KEYS_TO_DELETE": "No API keys available to delete.",
     "NO_API_KEYS_TO_RENAME": "No API keys available to rename.",
     "QUERY_EXPIRED": "Sorry, this menu has expired. Here's a fresh menu for you.",
-    "REPORT_UUID_PROMPT": "Please enter the UUID of the report you want to retrieve:",
     "RESTORE_DATABASE_PROMPT": "Please upload the database backup file you want to restore:",
     "RESTORE_ERROR": "Error restoring database. Please try again later.",
     "SANDBOX_API_MENU_TEXT": "Sandbox API Menu",
@@ -132,7 +131,7 @@
     "FILE_ANALYSIS_SUCCESS": "File analysis started successfully. UUID: {uuid}",
     "GET_REPORT_ERROR": "Error retrieving report: {error}",
     "GET_REPORT_SUCCESS": "Report retrieved successfully: {report}",
-    "INVALID_UUID": "Invalid UUID format. Please enter a valid UUID.",
+    "INVALID_UUID": "Invalid UUID format.",
     "GET_REPORTS_FOR_UUID": "Choose report: ",
     "ANALYSIS_IN_SANDBOX": "Go to the full analytical report in ANY.RUN Sandbox",
     "TEXT_REPORT": "Text report",
@@ -152,5 +151,6 @@
     "ALBUM_COUNTER": "Album {current}/{total}",
     "SHOW_RECORDED_VIDEO": "Show recorded video",
     "SHOW_CAPTURED_SCREENSHOTS": "Show captured screenshots",
-    "REPORT_LOADING": "Please wait while the report is being loaded. This may take a few moments."
+    "REPORT_LOADING": "Please wait while the report is being loaded. This may take a few moments.",
+    "API_KEY_NOT_FOUND": "API key not found. Please add an API key in the settings menu."
 }

@@ -24,8 +24,7 @@ from src.api.bot import (
     restore_database, process_database_restore
 )
 from src.api.sandbox import (
-    run_url_analysis, run_file_analysis, get_report_by_uuid, 
-    get_history, show_api_limits
+    get_report_by_uuid, get_history, show_api_limits
 )
 from src.api.users import (
     show_all_users, ban_user, unban_user, delete_user, process_user_action
@@ -45,8 +44,6 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(show_settings_menu, pattern='^settings$'))
     application.add_handler(CallbackQueryHandler(show_help_menu, pattern='^help$'))
 
-    application.add_handler(CallbackQueryHandler(run_url_analysis, pattern='^run_url_analysis$'))
-    application.add_handler(CallbackQueryHandler(run_file_analysis, pattern='^run_file_analysis$'))
     application.add_handler(CallbackQueryHandler(get_report_by_uuid, pattern='^get_report_by_uuid$'))
     application.add_handler(CallbackQueryHandler(get_history, pattern='^get_history$'))
     application.add_handler(CallbackQueryHandler(show_api_limits, pattern='^show_api_limits$'))
@@ -80,8 +77,6 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(ban_user, pattern='^ban_user$'))
     application.add_handler(CallbackQueryHandler(unban_user, pattern='^unban_user$'))
     application.add_handler(CallbackQueryHandler(delete_user, pattern='^delete_user$'))
-
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_user_action))
 
     application.add_handler(MessageHandler(filters.Document.ALL, process_database_restore))
 

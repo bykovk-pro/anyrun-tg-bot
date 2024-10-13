@@ -9,50 +9,13 @@ import validators
 from src.api.remote.sb_task_info import process_task_info, ResultType
 
 async def handle_get_reports_by_uuid(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Check if the update is a callback query
     if update.callback_query:
         await update.callback_query.answer()
-        # Запрашиваем UUID
         await update.callback_query.edit_message_text(humanize("ENTER_UUID_TO_GET_REPORT"))
     else:
         await update.message.reply_text(humanize("ENTER_UUID_TO_GET_REPORT"))
 
     context.user_data['next_action'] = 'get_reports_by_uuid'
-
-async def process_uuid_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Check if the update is a message and has text
-    if not update.message or not update.message.text:
-        logging.error(f"Invalid update received: {update}")
-        await show_sandbox_api_menu(update, context)
-        return
-
-    uuid = update.message.text.strip()
-    
-    # Validate UUID
-    if not validators.uuid(uuid):
-        await update.message.reply_text(humanize("INVALID_UUID"))
-        await show_sandbox_api_menu(update, context)
-        return
-
-    user_id = update.effective_user.id
-    api_key, error_message = await check_user_and_api_key(user_id)
-    
-    # Check if API key is valid
-    if error_message:
-        await update.message.reply_text(error_message)
-        await show_sandbox_api_menu(update, context)
-        return
-
-    # Отправляем сообщение о начале загрузки отчета
-    await update.message.reply_text(humanize("REPORT_LOADING"))
-
-    report = await get_report_by_uuid(api_key, uuid)
-
-    # Save report in context for later use
-    context.user_data['current_report'] = report
-
-    logging.debug(f"Report fetched successfully for UUID: {uuid}")
-    await display_report_info(update, context, report)
 
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_action = context.user_data.get('next_action')
@@ -64,6 +27,34 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if 'next_action' in context.user_data:
         del context.user_data['next_action']
+
+async def process_uuid_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        logging.error(f"Invalid update received: {update}")
+        await show_sandbox_api_menu(update, context)
+        return
+
+    uuid = update.message.text.strip()
+    
+    if not validators.uuid(uuid):
+        await update.message.reply_text(humanize("INVALID_UUID"))
+        await show_sandbox_api_menu(update, context)
+        return
+
+    api_key = context.user_data.get('api_key')
+    if not api_key:
+        await update.message.reply_text(humanize("API_KEY_NOT_FOUND"))
+        await show_sandbox_api_menu(update, context)
+        return
+
+    await update.message.reply_text(humanize("REPORT_LOADING"))
+
+    report = await get_report_by_uuid(api_key, uuid)
+
+    context.user_data['current_report'] = report
+
+    logging.debug(f"Report fetched successfully for UUID: {uuid}")
+    await display_report_info(update, context, report)
 
 async def display_report_info(update: Update, context: ContextTypes.DEFAULT_TYPE, report):
     main_object = report.get("content", {}).get("mainObject", {})

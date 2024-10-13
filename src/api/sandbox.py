@@ -3,8 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.api.remote.sb_user import get_user_limits
 from src.api.remote.sb_history import get_analysis_history
-from src.api.remote.sb_reports import get_report_by_uuid
-from src.api.remote.sb_analysis import run_url_analysis as api_run_url_analysis, run_file_analysis as api_run_file_analysis
+from src.api.reports import handle_get_reports_by_uuid
 from src.api.security import check_user_and_api_key, check_user_groups
 from src.db.users import db_get_user
 from src.lang.director import humanize
@@ -52,37 +51,15 @@ async def sandbox_api_action(update: Update, context: ContextTypes.DEFAULT_TYPE,
     logging.debug(f"Access granted for user {user_id}, executing {action_func.__name__}")
     await action_func(update, context, result)
 
-async def run_url_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await sandbox_api_action(update, context, _run_url_analysis)
-
-async def run_file_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await sandbox_api_action(update, context, _run_file_analysis)
-
 async def get_report_by_uuid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await sandbox_api_action(update, context, _get_report)
 
 async def get_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await sandbox_api_action(update, context, _show_history)
 
-async def _run_url_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE, api_key: str):
-    # Здесь нужно запросить URL у пользователя
-    await update.callback_query.edit_message_text(humanize("ENTER_URL_TO_ANALYZE"))
-    context.user_data['next_action'] = 'run_url_analysis'
-
-async def _run_file_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE, api_key: str):
-    # Здесь нужно запросить файл у пользователя
-    await update.callback_query.edit_message_text(humanize("UPLOAD_FILE_TO_ANALYZE"))
-    context.user_data['next_action'] = 'run_file_analysis'
-
 async def _get_report(update: Update, context: ContextTypes.DEFAULT_TYPE, api_key: str):
-    from src.api.reports import handle_get_reports_by_uuid
     logging.debug(f"Getting report for user {update.effective_user.id} with API key (first 5 chars): {api_key[:5]}")
     context.user_data['api_key'] = api_key
-
-    # Отправляем сообщение о начале загрузки отчета
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text(humanize("REPORT_LOADING"))
-
     await handle_get_reports_by_uuid(update, context)
 
 async def _show_history(update: Update, context: ContextTypes.DEFAULT_TYPE, api_key: str):
@@ -150,23 +127,3 @@ async def _show_api_limits(update: Update, context: ContextTypes.DEFAULT_TYPE, a
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.callback_query.message.reply_text(humanize("CHOOSE_OPTION"), reply_markup=reply_markup)
-
-async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    next_action = context.user_data.get('next_action')
-    if next_action == 'run_url_analysis':
-        url = update.message.text.strip()
-        result = await api_run_url_analysis(context.user_data['api_key'], url)
-        if 'error' in result:
-            await update.message.reply_text(humanize("URL_ANALYSIS_ERROR", error=result['error']))
-        else:
-            await update.message.reply_text(humanize("URL_ANALYSIS_SUCCESS", uuid=result['uuid']))
-    elif next_action == 'get_report':
-        uuid = update.message.text.strip()
-        result = await get_report_by_uuid(context.user_data['api_key'], uuid)
-        if 'error' in result:
-            await update.message.reply_text(humanize("GET_REPORT_ERROR", error=result['error']))
-        else:
-            # Здесь нужно обработать и отформатировать отчет
-            await update.message.reply_text(humanize("GET_REPORT_SUCCESS", report=str(result)))
-    
-    del context.user_data['next_action']
