@@ -30,6 +30,8 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
     else:
         await update.message.reply_text(menu_text, reply_markup=reply_markup)
+    
+    context.user_data.pop('next_action', None)  # Очищаем next_action при возврате в главное меню
 
 async def show_sandbox_api_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu_text = humanize("SANDBOX_API_MENU_TEXT")

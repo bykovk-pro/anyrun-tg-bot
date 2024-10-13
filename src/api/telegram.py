@@ -81,3 +81,6 @@ async def handle_telegram_error(update: Update, context: ContextTypes.DEFAULT_TY
         logging.error(f"TelegramError: {error}")
     else:
         logging.error(f"Unexpected error: {error}")
+
+# Удалите или закомментируйте эту строку, если она есть
+# application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))

@@ -133,7 +133,7 @@
     "GET_REPORT_SUCCESS": "Report retrieved successfully: {report}",
     "INVALID_UUID": "Invalid UUID format.",
     "GET_REPORTS_FOR_UUID": "Choose report: ",
-    "ANALYSIS_IN_SANDBOX": "Go to the full analytical report in ANY.RUN Sandbox",
+    "ANALYSIS_IN_SANDBOX": "Go to the full report in Sandbox",
     "TEXT_REPORT": "Text report",
     "REPORT_HTML": "Report in HTML format",
     "REPORT_ANYRUN": "Report in ANY.RUN format",

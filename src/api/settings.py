@@ -1,6 +1,7 @@
 import datetime
 import re
 import os
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat
 from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
 from src.lang.director import humanize
@@ -26,7 +27,11 @@ def create_manage_api_key_menu():
 async def manage_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu_text = humanize("MANAGE_API_KEY_MENU_TEXT")
     reply_markup = create_manage_api_key_menu()
-    await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
+    if update.callback_query:
+        await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
+    else:
+        await update.message.reply_text(menu_text, reply_markup=reply_markup)
+    logging.debug(f"Displayed manage_api_key menu for user {update.effective_user.id}")
 
 async def check_access_rights(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -88,7 +93,7 @@ async def show_api_keys(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.message.reply_text(keys_text)
 
     keyboard = [
-        [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='settings')]
+        [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='back_to_manage_api_key')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -158,6 +163,7 @@ async def set_active_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def handle_api_key_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    logging.debug(f"handle_api_key_actions called with data: {query.data}")
 
     if query.data.startswith('delete_'):
         api_key = query.data.split('_', 1)[1]
@@ -167,8 +173,9 @@ async def handle_api_key_actions(update: Update, context: ContextTypes.DEFAULT_T
     elif query.data.startswith('rename_'):
         api_key = query.data.split('_', 1)[1]
         context.user_data['api_key_to_rename'] = api_key
-        await query.edit_message_text(humanize("ENTER_NEW_API_KEY_NAME"))
         context.user_data['next_action'] = 'rename_api_key'
+        await query.edit_message_text(humanize("ENTER_NEW_API_KEY_NAME"))
+        logging.debug(f"Set next_action to rename_api_key for user {update.effective_user.id}")
     elif query.data.startswith('activate_'):
         api_key = query.data.split('_', 1)[1]
         await db_set_active_api_key(update.effective_user.id, api_key)
@@ -176,19 +183,26 @@ async def handle_api_key_actions(update: Update, context: ContextTypes.DEFAULT_T
         await manage_api_key(update, context)
     elif query.data == 'back_to_manage_api_key':
         await manage_api_key(update, context)
+    
+    logging.debug(f"Context user_data after handle_api_key_actions: {context.user_data}")
 
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_action = context.user_data.get('next_action')
+    logging.debug(f"settings.handle_text_input called with next_action: {next_action}")
+    logging.debug(f"Full context user_data: {context.user_data}")
+    
     if next_action == 'add_api_key':
         await process_add_api_key(update, context)
     elif next_action == 'rename_api_key':
         await process_rename_api_key(update, context)
     else:
+        logging.warning(f"Unknown next_action in settings: {next_action}")
         await update.message.reply_text(humanize("UNKNOWN_COMMAND"))
-        await show_settings_menu(update, context)
+        await manage_api_key(update, context)
     
-    if 'next_action' in context.user_data:
-        del context.user_data['next_action']
+    logging.debug(f"Clearing next_action for user {update.effective_user.id}")
+    context.user_data.pop('next_action', None)
+    logging.debug(f"Context user_data after handling: {context.user_data}")
 
 async def process_add_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -226,6 +240,10 @@ async def process_rename_api_key(update: Update, context: ContextTypes.DEFAULT_T
     api_key = context.user_data.get('api_key_to_rename')
     new_name = update.message.text.strip()
     
+    logging.debug(f"process_rename_api_key called for user {user_id}")
+    logging.debug(f"API key to rename: {api_key}")
+    logging.debug(f"New name: {new_name}")
+    
     new_name = re.sub(r'[^\w\s-]', '', new_name).strip()
     if not new_name:
         new_name = "Unnamed Key"
@@ -233,9 +251,12 @@ async def process_rename_api_key(update: Update, context: ContextTypes.DEFAULT_T
     if api_key:
         await db_change_api_key_name(user_id, api_key, new_name)
         await update.message.reply_text(humanize("API_KEY_RENAMED"))
+        logging.debug(f"API key renamed successfully for user {user_id}")
     else:
+        logging.error(f"No API key to rename for user {user_id}")
         await update.message.reply_text(humanize("ERROR_RENAMING_API_KEY"))
     
+    logging.debug(f"Calling manage_api_key after renaming for user {user_id}")
     await manage_api_key(update, context)
 
 async def handle_group_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
