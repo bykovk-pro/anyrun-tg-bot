@@ -8,49 +8,34 @@ from src.api.remote.sb_analysis import run_url_analysis as api_run_url_analysis,
 from src.api.security import check_user_and_api_key, check_user_groups
 from src.db.users import db_get_user
 from src.lang.director import humanize
+from src.api.menu_utils import escape_markdown
 from datetime import datetime
 import os
 
 
-def escape_markdown(text):
-    if text is None:
-        return ''
-    return text.replace('\\', '\\\\') \
-               .replace('*', '\\*') \
-               .replace('_', '\\_') \
-               .replace('[', '\\[') \
-               .replace(']', '\\]') \
-               .replace('(', '\\(') \
-               .replace(')', '\\)') \
-               .replace('~', '\\~') \
-               .replace('>', '\\>') \
-               .replace('#', '\\#') \
-               .replace('+', '\\+') \
-               .replace('-', '\\-') \
-               .replace('=', '\\=') \
-               .replace('|', '\\|') \
-               .replace('{', '\\{') \
-               .replace('}', '\\}') \
-               .replace('.', '\\.') \
-               .replace('!', '\\!')
-
 async def check_user_access(bot, user_id: int):
+    logging.debug(f"Checking access for user {user_id}")
     user = await db_get_user(user_id)
     if not user:
+        logging.warning(f"User {user_id} not found")
         return False, humanize("USER_NOT_FOUND")
     if user[4]:
+        logging.warning(f"User {user_id} is banned")
         return False, humanize("USER_BANNED")
     if user[5]:
+        logging.warning(f"User {user_id} is deleted")
         return False, humanize("USER_DELETED")
     
     api_key, error_message = await check_user_and_api_key(user_id)
     if error_message:
+        logging.warning(f"API key error for user {user_id}: {error_message}")
         return False, error_message
     
     logging.debug(f"API Key for user {user_id} (first 5 chars): {api_key[:5]}...")
     
     required_group_ids = os.getenv('REQUIRED_GROUP_IDS', '')
     if not await check_user_groups(bot, user_id, required_group_ids):
+        logging.warning(f"User {user_id} not in required groups")
         return False, humanize("NOT_IN_REQUIRED_GROUPS")
     
     return True, api_key
@@ -91,9 +76,15 @@ async def _run_file_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE,
     context.user_data['next_action'] = 'run_file_analysis'
 
 async def _get_report(update: Update, context: ContextTypes.DEFAULT_TYPE, api_key: str):
-    # Здесь нужно запросить UUID у пользователя
-    await update.callback_query.edit_message_text(humanize("ENTER_UUID_TO_GET_REPORT"))
-    context.user_data['next_action'] = 'get_report'
+    from src.api.reports import handle_get_reports_by_uuid
+    logging.debug(f"Getting report for user {update.effective_user.id} with API key (first 5 chars): {api_key[:5]}")
+    context.user_data['api_key'] = api_key
+
+    # Отправляем сообщение о начале загрузки отчета
+    await update.callback_query.answer()
+    await update.callback_query.edit_message_text(humanize("REPORT_LOADING"))
+
+    await handle_get_reports_by_uuid(update, context)
 
 async def _show_history(update: Update, context: ContextTypes.DEFAULT_TYPE, api_key: str):
     user_id = update.effective_user.id
@@ -104,8 +95,6 @@ async def _show_history(update: Update, context: ContextTypes.DEFAULT_TYPE, api_
     skip = 0
     logging.debug(f"Fetching analysis history with params: limit={limit}, skip={skip}")
     history = await get_analysis_history(api_key, limit, skip)
-
-    logging.debug(f"Received history: {history[:200]}...")
 
     if isinstance(history, dict) and "error" in history:
         await update.callback_query.answer(text=history["error"])
@@ -121,15 +110,13 @@ async def _show_history(update: Update, context: ContextTypes.DEFAULT_TYPE, api_
         await context.bot.send_message(chat_id=update.effective_chat.id, text=humanize("NO_ANALYSIS_HISTORY"))
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=humanize("LAST_TEN_REPORTS"))
+        
         for analysis in history:
-            if analysis.get('verdict') == 'No threats detected':
-                icon = '🔵'
-            elif analysis.get('verdict') == 'Suspicious activity':
-                icon = '🟡'
-            elif analysis.get('verdict') == 'Malicious activity':
-                icon = '🔴'
-            else:
-                icon = '⚪'
+            icon = {
+                "No threats detected": "🔵",
+                "Suspicious activity": "🟡",
+                "Malicious activity": "🔴"
+            }.get(analysis.get('verdict', 'Unknown'), "⚪")
 
             text_message = (
                 f"{icon}\u00A0***{escape_markdown(datetime.fromisoformat(analysis.get('date', '')).strftime('%d %B %Y, %H:%M'))}***\n"
@@ -188,17 +175,5 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             # Здесь нужно обработать и отформатировать отчет
             await update.message.reply_text(humanize("GET_REPORT_SUCCESS", report=str(result)))
-    
-    del context.user_data['next_action']
-
-async def handle_file_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get('next_action') == 'run_file_analysis':
-        file = await update.message.document.get_file()
-        file_content = await file.download_as_bytearray()
-        result = await api_run_file_analysis(context.user_data['api_key'], file_content, update.message.document.file_name)
-        if 'error' in result:
-            await update.message.reply_text(humanize("FILE_ANALYSIS_ERROR", error=result['error']))
-        else:
-            await update.message.reply_text(humanize("FILE_ANALYSIS_SUCCESS", uuid=result['uuid']))
     
     del context.user_data['next_action']

@@ -23,7 +23,7 @@ async def get_analysis_history(api_key: str, limit: int = 10, skip: int = 0):
                 logging.debug(f"Response content: {response_text[:200]}...")
                 if response.status == 200:
                     data = await response.json()
-                    tasks = data.get('data', {}).get('tasks', [])  # Изменено с 'analyses' на 'tasks'
+                    tasks = data.get('data', {}).get('tasks', [])
                     logging.debug(f"Received {len(tasks)} tasks")
                     return tasks
                 else:

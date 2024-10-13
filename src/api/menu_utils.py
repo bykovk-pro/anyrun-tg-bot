@@ -1,5 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from src.lang.director import humanize
+import logging
 
 def create_sandbox_api_menu():
     keyboard = [
@@ -27,3 +28,12 @@ def create_help_menu():
         [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='main_menu')]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+def escape_markdown(text: str) -> str:
+    # Ensure the input is a string
+    if not isinstance(text, str):
+        logging.error(f"Expected string for escape_markdown, got {type(text)}")
+        return str(text)
+    
+    # Escape markdown special characters
+    return text.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]').replace('(', '\\(').replace(')', '\\)').replace('~', '\\~').replace('`', '\\`').replace('>', '\\>').replace('#', '\\#').replace('+', '\\+').replace('-', '\\-').replace('=', '\\=').replace('|', '\\|').replace('{', '\\{').replace('}', '\\}').replace('.', '\\.').replace('!', '\\!')

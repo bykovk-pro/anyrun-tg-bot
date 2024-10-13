@@ -10,6 +10,7 @@ from src.db.api_keys import (
 )
 from src.api.security import check_in_groups
 from telegram.constants import ChatType
+from src.api.menu import show_settings_menu
 
 def create_manage_api_key_menu():
     keyboard = [
@@ -179,56 +180,63 @@ async def handle_api_key_actions(update: Update, context: ContextTypes.DEFAULT_T
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_action = context.user_data.get('next_action')
     if next_action == 'add_api_key':
-        user_id = update.effective_user.id
-        input_text = update.message.text.strip()
-        
-        match = re.match(r'^(\S+)\s*(.*)$', input_text)
-        if match:
-            new_key = match.group(1)
-            key_name = match.group(2).strip()
-        else:
-            new_key = input_text
-            key_name = ""
-        
-        if not key_name:
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            key_name = f"New API Key {timestamp}"
-        
-        key_name = re.sub(r'[^\w\s-]', '', key_name).strip()
-        if not key_name:
-            key_name = "Unnamed Key"
-        
-        success, error_message = await db_add_api_key(user_id, new_key, key_name)
-        if success:
-            await update.message.reply_text(humanize("API_KEY_ADDED"))
-        else:
-            if error_message == "API_KEY_ALREADY_EXISTS":
-                await update.message.reply_text(humanize("API_KEY_ALREADY_EXISTS"))
-            else:
-                await update.message.reply_text(humanize("ERROR_ADDING_API_KEY"))
-        
-        menu_text = humanize("MANAGE_API_KEY_MENU_TEXT")
-        reply_markup = create_manage_api_key_menu()
-        await update.message.reply_text(menu_text, reply_markup=reply_markup)
-    
+        await process_add_api_key(update, context)
     elif next_action == 'rename_api_key':
-        user_id = update.effective_user.id
-        api_key = context.user_data.get('api_key_to_rename')
-        new_name = update.message.text.strip()
-        
-        new_name = re.sub(r'[^\w\s-]', '', new_name).strip()
-        if not new_name:
-            new_name = "Unnamed Key"
-        
-        if api_key:
-            await db_change_api_key_name(user_id, api_key, new_name)
-            await update.message.reply_text(humanize("API_KEY_RENAMED"))
-            
-            menu_text = humanize("MANAGE_API_KEY_MENU_TEXT")
-            reply_markup = create_manage_api_key_menu()
-            await update.message.reply_text(menu_text, reply_markup=reply_markup)
+        await process_rename_api_key(update, context)
+    else:
+        await update.message.reply_text(humanize("UNKNOWN_COMMAND"))
+        await show_settings_menu(update, context)
     
-    del context.user_data['next_action']
+    if 'next_action' in context.user_data:
+        del context.user_data['next_action']
+
+async def process_add_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    input_text = update.message.text.strip()
+    
+    match = re.match(r'^(\S+)\s*(.*)$', input_text)
+    if match:
+        new_key = match.group(1)
+        key_name = match.group(2).strip()
+    else:
+        new_key = input_text
+        key_name = ""
+    
+    if not key_name:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        key_name = f"New API Key {timestamp}"
+    
+    key_name = re.sub(r'[^\w\s-]', '', key_name).strip()
+    if not key_name:
+        key_name = "Unnamed Key"
+    
+    success, error_message = await db_add_api_key(user_id, new_key, key_name)
+    if success:
+        await update.message.reply_text(humanize("API_KEY_ADDED"))
+    else:
+        if error_message == "API_KEY_ALREADY_EXISTS":
+            await update.message.reply_text(humanize("API_KEY_ALREADY_EXISTS"))
+        else:
+            await update.message.reply_text(humanize("ERROR_ADDING_API_KEY"))
+    
+    await manage_api_key(update, context)
+
+async def process_rename_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    api_key = context.user_data.get('api_key_to_rename')
+    new_name = update.message.text.strip()
+    
+    new_name = re.sub(r'[^\w\s-]', '', new_name).strip()
+    if not new_name:
+        new_name = "Unnamed Key"
+    
+    if api_key:
+        await db_change_api_key_name(user_id, api_key, new_name)
+        await update.message.reply_text(humanize("API_KEY_RENAMED"))
+    else:
+        await update.message.reply_text(humanize("ERROR_RENAMING_API_KEY"))
+    
+    await manage_api_key(update, context)
 
 async def handle_group_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query

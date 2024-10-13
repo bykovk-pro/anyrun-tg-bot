@@ -1,6 +1,4 @@
 import logging
-import validators
-import re
 from telegram import Update, User
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.error import BadRequest, TelegramError
@@ -8,26 +6,13 @@ from src.lang.context import set_user_language_getter, set_language_for_user
 from src.lang.director import humanize
 from src.api.security import setup_telegram_security, check_in_groups
 from src.api.menu import show_main_menu, create_main_menu
-from src.api.sandbox import run_url_analysis
-from src.api.settings import handle_text_input as settings_handle_text_input
 from src.db.users import db_add_user
+from src.api.reports import handle_text_input
 
 def get_user_language(user: User) -> str:
     return user.language_code if user.language_code else 'en'
 
 set_user_language_getter(get_user_language)
-
-def is_url(text: str) -> bool:
-
-    url_pattern = re.compile(
-        r'^((?:https?:\/\/)?'
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
-        r'localhost|'
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-        r'(?::\d+)?'
-        r'(?:/?|[/?]\S+))$', re.IGNORECASE)
-    
-    return bool(url_pattern.match(text))
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
@@ -36,12 +21,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         next_action = context.user_data.get('next_action')
         if next_action:
-            await settings_handle_text_input(update, context)
-        elif is_url(message_text):
-            await run_url_analysis(update, context)
+            await handle_text_input(update, context)
         else:
-            invalid_input_message = humanize("INVALID_INPUT")
-            await update.message.reply_text(invalid_input_message)
+            await update.message.reply_text(humanize("UNKNOWN_COMMAND"))
             await show_main_menu(update, context)
         
         logging.debug(f'User sent a message: user_id={update.effective_user.id}, message={message_text}')
@@ -115,4 +97,3 @@ async def handle_telegram_error(update: Update, context: ContextTypes.DEFAULT_TY
         logging.error(f"TelegramError: {error}")
     else:
         logging.error(f"Unexpected error: {error}")
-

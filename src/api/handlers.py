@@ -9,7 +9,7 @@ from src.api.menu import (
 from src.api.settings import (
     manage_api_key, show_api_keys, add_api_key, delete_api_key,
     change_api_key_name, set_active_api_key, handle_api_key_actions,
-    handle_text_input, check_access_rights, handle_group_info
+    check_access_rights, handle_group_info
 )
 from src.api.help import (
     show_help_menu
@@ -25,20 +25,20 @@ from src.api.bot import (
 )
 from src.api.sandbox import (
     run_url_analysis, run_file_analysis, get_report_by_uuid, 
-    handle_text_input, handle_file_input, get_history, show_api_limits
+    get_history, show_api_limits
 )
 from src.api.users import (
     show_all_users, ban_user, unban_user, delete_user, process_user_action
 )
+from src.api.reports import handle_text_input, handle_show_recorded_video, handle_show_captured_screenshots
+
+import logging
 
 def setup_handlers(application: Application):
     application.add_handler(CommandHandler("start", show_main_menu))
     application.add_handler(CommandHandler("menu", show_main_menu))
 
-    from src.api.telegram import handle_message
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input))
-    application.add_handler(MessageHandler(filters.Document.ALL, handle_file_input))
 
     application.add_handler(CallbackQueryHandler(show_main_menu, pattern='^main_menu$'))
     application.add_handler(CallbackQueryHandler(show_sandbox_api_menu, pattern='^sandbox_api$'))
@@ -85,11 +85,16 @@ def setup_handlers(application: Application):
 
     application.add_handler(MessageHandler(filters.Document.ALL, process_database_restore))
 
+    application.add_handler(CallbackQueryHandler(handle_group_info, pattern='^group_info_'))
+
+    application.add_handler(CallbackQueryHandler(handle_show_recorded_video, pattern='^show_recorded_video$'))
+    application.add_handler(CallbackQueryHandler(handle_show_captured_screenshots, pattern='^show_captured_screenshots$'))
+
     application.add_handler(CallbackQueryHandler(handle_unknown_callback))
 
-    application.add_handler(CallbackQueryHandler(handle_group_info, pattern='^group_info_'))
 
 async def handle_unknown_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    logging.warning(f"Unknown callback data received: {query.data}")
     await query.answer()
     await show_main_menu(update, context)
