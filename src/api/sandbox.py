@@ -8,9 +8,8 @@ from src.api.remote.sb_analysis import run_url_analysis as api_run_url_analysis,
 from src.api.security import check_user_and_api_key, check_user_groups
 from src.db.users import db_get_user
 from src.lang.director import humanize
-from src.api.menu_utils import escape_markdown
-from datetime import datetime
 import os
+from src.api.remote.sb_task_info import process_task_info, ResultType
 
 
 async def check_user_access(bot, user_id: int):
@@ -112,19 +111,13 @@ async def _show_history(update: Update, context: ContextTypes.DEFAULT_TYPE, api_
         await context.bot.send_message(chat_id=update.effective_chat.id, text=humanize("LAST_TEN_REPORTS"))
         
         for analysis in history:
-            icon = {
-                "No threats detected": "🔵",
-                "Suspicious activity": "🟡",
-                "Malicious activity": "🔴"
-            }.get(analysis.get('verdict', 'Unknown'), "⚪")
+            verdict = analysis.get('verdict', 'Unknown')
+            date = analysis.get('date', '')
+            name = analysis.get('name', '')
+            uuid = analysis.get('uuid', '')
+            tags = analysis.get('tags', [])
 
-            text_message = (
-                f"{icon}\u00A0***{escape_markdown(datetime.fromisoformat(analysis.get('date', '')).strftime('%d %B %Y, %H:%M'))}***\n"
-                f"📄\u00A0`{analysis.get('name', '')}`\n"
-                f"🆔\u00A0`{escape_markdown(analysis.get('uuid', ''))}`\n"
-            )
-            if analysis.get('tags'):
-                text_message += f"🏷️\u00A0\\[***{'***\\] \\[***'.join(escape_markdown(tag) for tag in analysis['tags'])}***\\]"
+            text_message = process_task_info(verdict, date, name, uuid, tags, ResultType.TEXT)
 
             if text_message.strip():
                 await context.bot.send_message(chat_id=update.effective_chat.id, text=text_message, parse_mode='MarkdownV2')

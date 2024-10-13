@@ -5,9 +5,8 @@ from src.lang.director import humanize
 from src.api.remote.sb_reports import get_report_by_uuid
 from src.api.security import check_user_and_api_key
 from src.api.menu import show_sandbox_api_menu
-from src.api.menu_utils import escape_markdown
 import validators
-from datetime import datetime
+from src.api.remote.sb_task_info import process_task_info, ResultType
 
 async def handle_get_reports_by_uuid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if the update is a callback query
@@ -70,59 +69,18 @@ async def display_report_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     main_object = report.get("content", {}).get("mainObject", {})
     name = main_object.get("filename") if main_object.get("type") == "file" else main_object.get("url", "Unknown")
 
-    icon = {
-        "No threats detected": "🔵",
-        "Suspicious activity": "🟡",
-        "Malicious activity": "🔴"
-    }.get(report.get("scores", {}).get("verdict", {}).get("threatLevelText", "Unknown"), "⚪")
+    verdict = report.get("scores", {}).get("verdict", {}).get("threatLevelText", "Unknown")
+    date = report.get("creationText", "")
+    uuid = report.get("uuid", "Unknown")
+    tags = [tag['tag'] for tag in report.get("tags", []) if 'tag' in tag]
 
-    text_message = (
-        f"{icon}\u00A0***{escape_markdown(datetime.fromisoformat(report.get('creationText', '')).strftime('%d %B %Y, %H:%M'))}***\n"
-        f"📄\u00A0`{escape_markdown(name)}`\n"
-        f"🆔\u00A0`{escape_markdown(report.get('uuid', 'Unknown'))}`\n"
-    )
-
-    tags = report.get("tags", [])
-    tag_strings = [escape_markdown(tag['tag']) for tag in tags if 'tag' in tag]
-    if tag_strings:
-        text_message += f"🏷️\u00A0\\[***{'***\\] \\[***'.join(tag_strings)}***\\]"
+    text_message = process_task_info(verdict, date, name, uuid, tags, ResultType.TEXT)
 
     await update.message.reply_text(text_message, parse_mode='MarkdownV2')
     await show_report_menu(update, context, report)
 
 async def show_report_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, report):
-    content = report.get("content", {})
-    main_object = content.get("mainObject", {})
-    video_url = content.get("video", {}).get("permanentUrl")
-    screenshots = content.get("screenshots", [])
-
-    keyboard = [
-        [InlineKeyboardButton(humanize("ANALYSIS_IN_SANDBOX"), url=report.get("permanentUrl", ""))]
-    ]
-
-    if video_url:
-        keyboard.append([InlineKeyboardButton(humanize("SHOW_RECORDED_VIDEO"), callback_data='show_recorded_video')])
-    if screenshots:
-        keyboard.append([InlineKeyboardButton(humanize("SHOW_CAPTURED_SCREENSHOTS"), callback_data='show_captured_screenshots')])
-
-    keyboard.extend([
-        [InlineKeyboardButton(humanize("TEXT_REPORT"), url=f"https://any.run/report/{main_object.get('hashes', {}).get('sha256', '')}/{report.get('uuid', '')}")],
-        [InlineKeyboardButton(humanize("REPORT_HTML"), url=report.get("reports", {}).get("HTML", ""))],
-        [InlineKeyboardButton(humanize("REPORT_ANYRUN"), url=f"https://api.any.run/report/{report.get('uuid', '')}/summary/json")],
-        [InlineKeyboardButton(humanize("REPORT_STIX"), url=report.get("reports", {}).get("STIX", ""))],
-        [InlineKeyboardButton(humanize("REPORT_MISP"), url=report.get("reports", {}).get("MISP", ""))],
-        [InlineKeyboardButton(humanize("ALL_IOC"), url=report.get("reports", {}).get("IOC", ""))]
-    ])
-
-    if main_object.get("type") == "file":
-        keyboard.append([InlineKeyboardButton(humanize("DOWNLOAD_SAMPLE"), url=main_object.get("permanentUrl", ""))])
-
-    if report.get("pcap", {}).get("present") == "true":
-        keyboard.append([InlineKeyboardButton(humanize("DOWNLOAD_PCAP"), url=report["pcap"]["permanentUrl"])])
-
-    keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='sandbox_api')])
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = create_report_menu_keyboard(report)
     report_message = f"{humanize('GET_REPORTS_FOR_UUID')}"
     
     if update.callback_query:
@@ -190,9 +148,9 @@ def create_report_menu_keyboard(report):
         keyboard.append([InlineKeyboardButton(humanize("SHOW_CAPTURED_SCREENSHOTS"), callback_data='show_captured_screenshots')])
 
     keyboard.extend([
-        [InlineKeyboardButton(humanize("TEXT_REPORT"), url=f"https://any.run/report/{report.get('mainObject', {}).get('hashes', {}).get('sha256', '')}/{report.get('uuid', '')}")],
+        [InlineKeyboardButton(humanize("TEXT_REPORT"), url=f"https://any.run/report/{report.get('content', {}).get('mainObject', {}).get('hashes', {}).get('sha256', '')}/{report.get('uuid', '')}")],
         [InlineKeyboardButton(humanize("REPORT_HTML"), url=report.get("reports", {}).get("HTML", ""))],
-        [InlineKeyboardButton(humanize("REPORT_ANYRUN"), url=f"https://app.any.run/report/{report.get('uuid', '')}/summary/json")],
+        [InlineKeyboardButton(humanize("REPORT_ANYRUN"), url=f"https://api.any.run/report/{report.get('uuid', '')}/summary/json")],
         [InlineKeyboardButton(humanize("REPORT_STIX"), url=report.get("reports", {}).get("STIX", ""))],
         [InlineKeyboardButton(humanize("REPORT_MISP"), url=report.get("reports", {}).get("MISP", ""))],
         [InlineKeyboardButton(humanize("ALL_IOC"), url=report.get("reports", {}).get("IOC", ""))]
