@@ -14,6 +14,7 @@ def setup_telegram_security(token) -> str:
         logging.critical('Telegram bot token not found in environment variables')
         raise EnvironmentError('Telegram bot token not found in environment variables')
     
+    # Token regex ^\d{8,10}:[a-zA-Z0-9_-]{35}$ may false positive, try ((?<=bot)\d{8,10}:[\w-]{35}|\d{10}:AA[\w-]{33}) instead?
     if not re.match(r'^\d{8,10}:[a-zA-Z0-9_-]{35}$', token):
         logging.error('Invalid Telegram bot token format')
         raise ValueError('Invalid Telegram bot token format')

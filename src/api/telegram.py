@@ -1,7 +1,8 @@
 import logging
+import asyncio
 from telegram import Update, User
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.error import BadRequest, TelegramError
+from telegram.error import BadRequest, TelegramError, NetworkError
 from src.lang.context import set_user_language_getter, set_language_for_user
 from src.lang.director import humanize
 from src.api.security import setup_telegram_security, check_in_groups
@@ -71,7 +72,10 @@ async def handle_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_telegram_error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     error = context.error
-    if isinstance(error, BadRequest):
+    if isinstance(error, NetworkError):
+        logging.error(f"NetworkError: {error}. Retrying connection...")
+        await retry_connection(context)
+    elif isinstance(error, BadRequest):
         if "Query is too old" in str(error):
             await update.effective_message.reply_text(humanize("QUERY_EXPIRED"))
             await show_main_menu(update, context)
@@ -81,6 +85,17 @@ async def handle_telegram_error(update: Update, context: ContextTypes.DEFAULT_TY
         logging.error(f"TelegramError: {error}")
     else:
         logging.error(f"Unexpected error: {error}")
+        await update.effective_message.reply_text(humanize("ERROR_OCCURRED"))
 
-# Удалите или закомментируйте эту строку, если она есть
-# application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+async def retry_connection(context: ContextTypes.DEFAULT_TYPE, delay: int = 60):
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            await context.bot.get_me()
+            logging.info("Reconnected to Telegram successfully.")
+            return
+        except NetworkError as e:
+            wait_time = delay * (2 ** attempt)
+            logging.warning(f"Retrying in {wait_time} seconds due to NetworkError: {e}")
+            await asyncio.sleep(wait_time)
+    logging.critical("Failed to reconnect to Telegram after multiple attempts.")
