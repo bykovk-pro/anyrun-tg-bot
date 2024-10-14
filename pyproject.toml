@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anyrun-tg-bot"
+version = "0.6.2"
+description = "A Telegram bot for interacting with the ANY.RUN API"
+authors = [
+    { name = "Kirill Bykov", email = "me@bykovk.pro" }
+]
+readme = "README.md"
+license = { text = "MIT License" }
+keywords = ["anyrun", "any.run", "telegram", "bot", "api", "malware", "analysis", "security", "sandbox", "threat intelligence", "cybersecurity"]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Customer Service",
+    "Intended Audience :: Education",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "Topic :: Security",
+    "Topic :: Education",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows"
+]
+dependencies = [
+    "python-telegram-bot==21.6",
+    "python-dotenv==1.0.1",
+    "requests==2.32.3",
+    "aiosqlite==0.20.0",
+    "pyzipper==0.3.6",
+    "watchdog==2.2.1",
+    "aiohttp==3.10.10",
+    "validators==0.34.0",
+    "psutil==6.0.0",
+    "pyinstaller==6.1.0",
+    "pyinstaller-hooks-contrib==2024.8",
+    "python-daemon==3.0.1"
+]
+
+[project.scripts]
+anyrun-tg-bot = "main:main"
+
+[project.urls]
+Homepage = "https://any.run"
+Repository = "https://github.com/bykovk-pro/ANY.RUN-for-Telegram"

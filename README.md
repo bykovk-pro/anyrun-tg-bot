@@ -32,9 +32,9 @@ Follow these instructions to set up and run the bot.
    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
    ```
 
-3. **Install dependencies**:
+3. **Install the bot**:
    ```bash
-   pip install -e .[dev]
+   pip install .
    ```
 
 ### Configuration
