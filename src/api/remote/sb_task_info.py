@@ -2,6 +2,7 @@ from enum import Enum
 from datetime import datetime
 import logging
 from src.api.menu_utils import escape_markdown
+from dateutil import parser
 
 class ResultType(Enum):
     TEXT = "text"
@@ -31,7 +32,7 @@ def process_task_info_text(verdict, date, main_object, uuid, tags):
     # Обработка date
     try:
         if isinstance(date, str):
-            date = datetime.fromisoformat(date)
+            date = parser.isoparse(date)
         elif isinstance(date, int):
             date = datetime.fromtimestamp(date)
         formatted_date = escape_markdown(date.strftime('%d %B %Y, %H:%M'))
@@ -59,4 +60,3 @@ def process_task_info_text(verdict, date, main_object, uuid, tags):
     )
 
     return result.strip()
-

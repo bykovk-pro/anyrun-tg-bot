@@ -8,6 +8,7 @@ from src.lang.director import humanize
 from src.api.security import setup_telegram_security, check_in_groups
 from src.api.menu import show_main_menu, create_main_menu
 from src.db.users import db_add_user
+from importlib.metadata import version
 
 def get_user_language(user: User) -> str:
     return user.language_code if user.language_code else 'en'
@@ -63,7 +64,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logging.error(f"Error adding/updating user in database: {e}")
     
-    welcome_message = humanize("WELCOME_MESSAGE")
+    welcome_message = humanize("WELCOME_MESSAGE").format(version=version("anyrun-tg-bot"))
     await update.message.reply_text(welcome_message)
     await show_main_menu(update, context)
 
