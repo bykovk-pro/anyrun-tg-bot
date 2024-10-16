@@ -1,69 +1,35 @@
 import logging
-import asyncio
 import os
+import platform
+import psutil
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.director import backup, restore
 from src.api.admin import show_manage_bot_menu
-
-async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    confirm_keyboard = [
-        [InlineKeyboardButton(humanize("YES"), callback_data='confirm_restart_bot')],
-        [InlineKeyboardButton(humanize("NO"), callback_data='manage_bot')]
-    ]
-    reply_markup = InlineKeyboardMarkup(confirm_keyboard)
-    await update.callback_query.edit_message_text(humanize("CONFIRM_RESTART_BOT"), reply_markup=reply_markup)
-
-async def confirm_restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.edit_message_text(humanize("BOT_RESTARTING"))
-    await show_manage_bot_menu(update, context)
-
-async def change_log_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    current_level = logging.getLogger().level
-    levels = [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL]
-    level_names = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-    
-    keyboard = [[InlineKeyboardButton(name, callback_data=f'set_log_level_{level}') for name, level in zip(level_names, levels)]]
-    keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_bot')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.callback_query.edit_message_text(
-        humanize("CHANGE_LOG_LEVEL_PROMPT").format(current_level=logging.getLevelName(current_level)),
-        reply_markup=reply_markup
-    )
-
-async def set_log_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    level = int(query.data.split('_')[-1])
-    logging.getLogger().setLevel(level)
-    await query.answer(humanize("LOG_LEVEL_CHANGED"))
-    await show_manage_bot_menu(update, context)
-
-async def show_bot_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logs = "Last 50 lines of bot logs will be shown here"
-    await update.callback_query.edit_message_text(logs)
-    keyboard = [[InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_bot')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.callback_query.edit_message_text(logs, reply_markup=reply_markup)
-
-async def show_bot_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    stats = "Bot statistics will be shown here"
-    keyboard = [[InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_bot')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.callback_query.edit_message_text(stats, reply_markup=reply_markup)
+from src.config import load_config
 
 async def show_system_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    system_info = "System information will be shown here"
+    system_info = f"""
+{humanize("SYSTEM_INFO_OS")}: {platform.system()} {platform.release()}
+{humanize("SYSTEM_INFO_PYTHON")}: {platform.python_version()}
+{humanize("SYSTEM_INFO_PROCESSOR")}: {platform.processor()}
+{humanize("SYSTEM_INFO_CPU_CORES")}: {psutil.cpu_count()}
+{humanize("SYSTEM_INFO_CPU_USAGE")}: {psutil.cpu_percent()}%
+{humanize("SYSTEM_INFO_TOTAL_MEMORY")}: {psutil.virtual_memory().total / (1024 * 1024):.2f} MB
+{humanize("SYSTEM_INFO_USED_MEMORY")}: {psutil.virtual_memory().used / (1024 * 1024):.2f} MB
+{humanize("SYSTEM_INFO_FREE_MEMORY")}: {psutil.virtual_memory().free / (1024 * 1024):.2f} MB
+{humanize("SYSTEM_INFO_DISK_USAGE")}: {psutil.disk_usage('/').percent}%
+    """
+    
     keyboard = [[InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_bot')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.callback_query.edit_message_text(system_info, reply_markup=reply_markup)
 
 async def backup_database(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.debug("Starting database backup process")
-    config = get_config()
     try:
-        backup_path = await backup(config)
+        backup_path = await backup()
         logging.debug(f"Backup function returned path: {backup_path}")
         
         if backup_path is None:
@@ -95,7 +61,7 @@ async def backup_database(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.message.reply_text(humanize("BACKUP_ERROR") + f"\n\nDetails: {error_message}")
     
     finally:
-        await show_manage_bot_menu(update, context)
+        await show_manage_bot_menu(update, context, new_message=True)
 
 async def restore_database(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.edit_message_text(humanize("RESTORE_DATABASE_PROMPT"))
@@ -104,23 +70,24 @@ async def restore_database(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def process_database_restore(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.document:
         await update.message.reply_text(humanize("INVALID_BACKUP_FILE"))
-        await show_manage_bot_menu(update, context)
+        await show_manage_bot_menu(update, context, new_message=True)
         return
 
     file = await context.bot.get_file(update.message.document.file_id)
     file_path = f"temp_backup_{update.effective_user.id}.zip"
     await file.download_to_drive(file_path)
 
-    config = get_config()
     try:
-        await restore(config, file_path)
-        await update.message.reply_text(humanize("DATABASE_RESTORED"))
+        restore_success = await restore(file_path)
+        if restore_success:
+            await update.message.reply_text(humanize("DATABASE_RESTORED"))
+        else:
+            await update.message.reply_text(humanize("RESTORE_ERROR"))
     except Exception as e:
         logging.error(f"Error restoring database: {str(e)}")
         await update.message.reply_text(humanize("RESTORE_ERROR"))
 
-    import os
     os.remove(file_path)
 
     del context.user_data['next_action']
-    await show_manage_bot_menu(update, context)
+    await show_manage_bot_menu(update, context, new_message=True)

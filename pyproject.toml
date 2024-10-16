@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "anyrun-tg-bot"
-version = "0.6.4"
+version = "0.6.5"
 description = "A Telegram bot for interacting with the ANY.RUN API"
 authors = [
     { name = "Kirill Bykov", email = "me@bykovk.pro" }
@@ -50,4 +50,4 @@ anyrun-tg-bot = "main:main"
 
 [project.urls]
 Homepage = "https://any.run"
-Repository = "https://github.com/bykovk-pro/ANY.RUN-for-Telegram"
+Repository = "https://github.com/bykovk-pro/anyrun-tg-bot"

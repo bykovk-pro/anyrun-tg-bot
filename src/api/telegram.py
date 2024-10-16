@@ -6,17 +6,18 @@ from telegram.error import BadRequest, TelegramError, NetworkError
 from src.lang.context import set_user_language_getter, set_language_for_user
 from src.lang.director import humanize
 from src.api.security import setup_telegram_security, check_in_groups
-from src.api.menu import show_main_menu, create_main_menu
+from src.api.menu import show_main_menu
 from src.db.users import db_add_user
 from importlib.metadata import version
+from src.config import load_config
 
 def get_user_language(user: User) -> str:
     return user.language_code if user.language_code else 'en'
 
 set_user_language_getter(get_user_language)
 
-async def setup_telegram_bot(config):
-    TOKEN = config.get('TELEGRAM_TOKEN')
+async def setup_telegram_bot():
+    TOKEN = load_config().get('TELEGRAM_TOKEN')
     logging.debug(f"Setting up Telegram bot with token: {TOKEN[:5]}...{TOKEN[-5:]}.")
     
     try:
@@ -26,15 +27,14 @@ async def setup_telegram_bot(config):
         application = Application.builder().token(TOKEN).build()
         logging.debug('Telegram application built successfully')
         
-        required_group_ids = config.get('REQUIRED_GROUP_IDS')
+        required_group_ids = load_config().get('REQUIRED_GROUP_IDS')
         logging.debug(f'Required group IDs: {required_group_ids}')
 
         await application.initialize()
         await application.bot.initialize()
         
         bot_in_groups = await check_in_groups(application.bot, application.bot.id, is_bot=True, required_group_ids=required_group_ids)
-        
-        # Проверяем, что бот состоит во всех требуемых группах
+
         if not all(info[0] for info in bot_in_groups.values()):
             logging.warning(f'Bot is not in all required groups. Missing groups: {list(bot_in_groups.keys())[:200]}')
         else:

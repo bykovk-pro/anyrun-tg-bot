@@ -2,7 +2,6 @@ import logging
 import aiohttp
 from src.api.security import check_user_groups, check_user_api_keys, rate_limiter
 from src.lang.director import humanize
-import json
 
 async def get_api_limits(bot, user_id, required_group_ids):
     if not await check_user_groups(bot, user_id, required_group_ids):

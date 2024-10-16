@@ -15,12 +15,10 @@ from src.api.help import (
     show_help_menu
 )
 from src.api.admin import (
-    show_admin_panel, show_manage_users_menu, show_manage_bot_menu, 
-    check_bot_groups
+    show_admin_panel, show_manage_users_menu, show_manage_bot_menu 
 )
 from src.api.bot import (
-    restart_bot, confirm_restart_bot, change_log_level, set_log_level,
-    show_bot_logs, show_bot_stats, show_system_info, backup_database,
+    show_system_info, backup_database,
     restore_database, process_database_restore
 )
 from src.api.sandbox import (
@@ -63,14 +61,7 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(show_admin_panel, pattern='^admin_panel$'))
     application.add_handler(CallbackQueryHandler(show_manage_users_menu, pattern='^manage_users$'))
     application.add_handler(CallbackQueryHandler(show_manage_bot_menu, pattern='^manage_bot$'))
-    application.add_handler(CallbackQueryHandler(check_bot_groups, pattern='^check_bot_groups$'))
 
-    application.add_handler(CallbackQueryHandler(restart_bot, pattern='^restart_bot$'))
-    application.add_handler(CallbackQueryHandler(confirm_restart_bot, pattern='^confirm_restart_bot$'))
-    application.add_handler(CallbackQueryHandler(change_log_level, pattern='^change_log_level$'))
-    application.add_handler(CallbackQueryHandler(set_log_level, pattern='^set_log_level_'))
-    application.add_handler(CallbackQueryHandler(show_bot_logs, pattern='^show_bot_logs$'))
-    application.add_handler(CallbackQueryHandler(show_bot_stats, pattern='^show_bot_stats$'))
     application.add_handler(CallbackQueryHandler(show_system_info, pattern='^show_system_info$'))
     application.add_handler(CallbackQueryHandler(backup_database, pattern='^backup_database$'))
     application.add_handler(CallbackQueryHandler(restore_database, pattern='^restore_database$'))

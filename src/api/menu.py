@@ -2,8 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.users import db_is_user_admin
-from src.api.menu_utils import create_sandbox_api_menu, create_admin_menu, create_help_menu
-from src.api.threat_intelligence import show_threat_intelligence_menu
+from src.api.menu_utils import create_main_menu, create_settings_menu, create_sandbox_api_menu
 
 def create_main_menu():
     keyboard = [
@@ -33,7 +32,7 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(menu_text, reply_markup=reply_markup)
     
-    context.user_data.pop('next_action', None)  # Очищаем next_action при возврате в главное меню
+    context.user_data.pop('next_action', None)
 
 async def show_sandbox_api_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu_text = humanize("SANDBOX_API_MENU_TEXT")

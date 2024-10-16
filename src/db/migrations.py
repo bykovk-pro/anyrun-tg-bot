@@ -2,7 +2,6 @@ import logging
 from src.db.common import get_db_pool
 from packaging import version as packaging_version
 
-# Список миграций. Каждая миграция - это словарь с версией бота и SQL-запросами
 MIGRATIONS = [
     {
         "bot_version": "0.6.3",
@@ -27,7 +26,6 @@ MIGRATIONS = [
             "ALTER TABLE users DROP COLUMN lang",
         ]
     },
-    # Добавляйте новые миграции сюда
 ]
 
 async def get_current_version():

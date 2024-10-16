@@ -1,23 +1,18 @@
 import logging
 import asyncio
-import os
-from dotenv import load_dotenv
+import sys
 from src.db.director import init_database, check_and_setup_admin
 from src.api.telegram import setup_telegram_bot
 
-def load_config():
-    load_dotenv(override=True)
-    return {key: value for key, value in os.environ.items()}
-
-async def initialize_application(config):
+async def initialize_application():
     logging.debug("Starting initialize_application")
     try:
         await init_database()
         logging.debug("Database initialized")
-        await check_and_setup_admin(config)
+        await check_and_setup_admin()
         logging.debug("Admin setup completed")
 
-        application = await setup_telegram_bot(config)
+        application = await setup_telegram_bot()
         logging.debug("Telegram bot setup completed")
         return application
     except Exception as e:
@@ -25,21 +20,23 @@ async def initialize_application(config):
         raise
 
 async def main():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        stream=sys.stdout
+    )
+
     logging.info("- * - * - * - * - * - * - * - * - * -")
     logging.info("- * Starting ANY.RUN for Telegram * -")
     logging.info("- * - * - * - * - * - * - * - * - * -")
     
-    config = load_config()
-    logging.debug("Configuration loaded from .env file")
-
     try:
-        application = await initialize_application(config)
+        application = await initialize_application()
         await application.initialize()
         await application.start()
         await application.updater.start_polling()
         
-        logging.info("Application anyrun-tg-bot started")
+        logging.info("ANY.RUN for Telegram started")
 
         while True:
             await asyncio.sleep(1)
