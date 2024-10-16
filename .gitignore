@@ -51,3 +51,4 @@ dmypy.json
 cython_debug/
 .github/
 .cursorignore
+.pypirc

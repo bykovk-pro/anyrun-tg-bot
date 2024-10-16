@@ -5,7 +5,6 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.director import backup, restore
-from src.config import get_config
 from src.api.admin import show_manage_bot_menu
 
 async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):

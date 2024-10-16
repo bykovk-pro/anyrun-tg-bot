@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "anyrun-tg-bot"
-version = "0.6.3"
+version = "0.6.4"
 description = "A Telegram bot for interacting with the ANY.RUN API"
 authors = [
     { name = "Kirill Bykov", email = "me@bykovk.pro" }
@@ -41,7 +41,8 @@ dependencies = [
     "pyinstaller==6.1.0",
     "pyinstaller-hooks-contrib==2024.8",
     "python-daemon==3.0.1",
-    "python-dateutil==2.8.2"
+    "python-dateutil==2.8.2",
+    "packaging==23.2"
 ]
 
 [project.scripts]

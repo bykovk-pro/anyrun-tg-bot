@@ -9,9 +9,6 @@ This Telegram bot provides a user-friendly interface to interact with the ANY.RU
 - Check the status of ongoing analyses
 - Manage API keys within the Telegram interface
 - Automatic language detection and support
-- Flexible logging system with adjustable log levels
-- Asynchronous database operations for improved performance
-- Secure database backup with password protection
 - Admin panel for user management and system operations
 
 ## Getting Started
@@ -22,14 +19,14 @@ Follow these instructions to set up and run the bot.
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/bykovk-pro/ANY.RUN-for-Telegram.git
-   cd ANY.RUN-for-Telegram
+   git clone https://github.com/bykovk-pro/anyrun-tg-bot.git
+   cd anyrun-tg-bot
    ```
 
 2. **Create a virtual environment (recommended)**:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   source venv/bin/activate 
    ```
 
 3. **Install the bot**:
@@ -47,9 +44,6 @@ Follow these instructions to set up and run the bot.
    TELEGRAM_TOKEN=<your_telegram_token>
    TELEGRAM_ADMIN_ID=<your_telegram_admin_id>
    REQUIRED_GROUP_IDS=<comma_separated_group_ids>
-   LOG_LEVEL=<your_log_level>
-   TELEGRAM_LOG_LEVEL=<your_telegram_log_level>
-   SQLITE_LOG_LEVEL=<your_sqlite_log_level>
    DB_PASSWORD=<your_backup_password>
    ```
 
@@ -60,10 +54,15 @@ Follow these instructions to set up and run the bot.
 To run the bot, use the following command:
 
 ```bash
-anyrun-tg-bot start
+python -m src.main
 ```
 
-The bot will start and run in the foreground. For production use, consider using a process manager to run the bot as a background service.
+The bot will start and run in the foreground. For production use, consider using a process manager to run the bot as a background service:
+
+```bash
+systemctl start anyrun-tg-bot
+systemctl enable anyrun-tg-bot
+```
 
 ## License
 

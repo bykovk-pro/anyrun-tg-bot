@@ -4,14 +4,21 @@ import logging
 import pyzipper
 import tempfile
 import shutil
+from importlib.metadata import version
 from src.db.common import get_db_pool, DB_FILE, ROOT_DIR
 from src.db.users import db_add_user
+from src.db.migrations import run_migrations
+
+# Получаем версию бота из metadata
+BOT_VERSION = version("anyrun-tg-bot")
 
 async def init_database():
     try:
         logging.debug(f"Initializing database at {DB_FILE}")
         db = await get_db_pool()
         logging.debug("Database connection established")
+        
+        # Создаем базовые таблицы, если они еще не существуют
         await db.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 telegram_id BIGINT PRIMARY KEY,
@@ -42,7 +49,11 @@ async def init_database():
             END;
         ''')
         await db.commit()
-        logging.info("Database initialized successfully")
+        
+        # Запускаем миграции, передавая текущую версию бота
+        await run_migrations(BOT_VERSION)
+        
+        logging.info("Database initialized and migrated successfully")
     except Exception as e:
         logging.critical(f"Error initializing database: {e}")
         raise
