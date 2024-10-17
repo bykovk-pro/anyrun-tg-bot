@@ -4,25 +4,6 @@ from src.lang.director import humanize
 from src.db.users import db_is_user_admin
 from src.api.menu_utils import create_main_menu, create_settings_menu, create_sandbox_api_menu
 
-def create_main_menu():
-    keyboard = [
-        [InlineKeyboardButton(humanize("MENU_BUTTON_SANDBOX_API"), callback_data='sandbox_api')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_THREAT_INTELLIGENCE"), callback_data='threat_intelligence')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_SETTINGS"), callback_data='settings')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_HELP"), callback_data='help')]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-def create_settings_menu(is_admin=False):
-    keyboard = [
-        [InlineKeyboardButton(humanize("MENU_BUTTON_MANAGE_API_KEY"), callback_data='manage_api_key')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_CHECK_ACCESS_RIGHTS"), callback_data='check_access_rights')]
-    ]
-    if is_admin:
-        keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_ADMIN_PANEL"), callback_data='admin_panel')])
-    keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='main_menu')])
-    return InlineKeyboardMarkup(keyboard)
-
 async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     menu_text = humanize("MAIN_MENU_TEXT")
     reply_markup = create_main_menu()

@@ -1,6 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from src.lang.director import humanize
 import logging
+import os
 
 def create_sandbox_api_menu():
     keyboard = [
@@ -61,9 +62,13 @@ def create_main_menu():
 
 def create_settings_menu(is_admin=False):
     keyboard = [
-        [InlineKeyboardButton(humanize("MENU_BUTTON_MANAGE_API_KEY"), callback_data='manage_api_key')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_CHECK_ACCESS_RIGHTS"), callback_data='check_access_rights')]
+        [InlineKeyboardButton(humanize("MENU_BUTTON_MANAGE_API_KEY"), callback_data='manage_api_key')]
     ]
+    
+    required_group_ids = os.getenv('REQUIRED_GROUP_IDS', '')
+    if required_group_ids.strip():
+        keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_CHECK_ACCESS_RIGHTS"), callback_data='check_access_rights')])
+    
     if is_admin:
         keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_ADMIN_PANEL"), callback_data='admin_panel')])
     keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='main_menu')])

@@ -1,19 +1,6 @@
 import logging
 import aiohttp
-from src.api.security import check_user_groups, check_user_api_keys, rate_limiter
 from src.lang.director import humanize
-
-async def get_api_limits(bot, user_id, required_group_ids):
-    if not await check_user_groups(bot, user_id, required_group_ids):
-        return "You are not in the required groups."
-
-    if not await check_user_api_keys(user_id):
-        return "You do not have any active API keys."
-
-    if not await rate_limiter(user_id):
-        return "Rate limit exceeded. Please wait before making another request."
-
-    return "API limits retrieved successfully."
 
 async def get_user_limits(api_key: str):
     url = "https://api.any.run/v1/user"

@@ -4,39 +4,10 @@ from telegram.ext import ContextTypes
 from src.api.remote.sb_user import get_user_limits
 from src.api.remote.sb_history import get_analysis_history
 from src.api.reports import handle_get_reports_by_uuid
-from src.api.security import check_user_and_api_key, check_user_groups
-from src.db.users import db_get_user
+from src.api.security import check_user_access
 from src.lang.director import humanize
-import os
 from src.api.remote.sb_task_info import process_task_info, ResultType
 
-
-async def check_user_access(bot, user_id: int):
-    logging.debug(f"Checking access for user {user_id}")
-    user = await db_get_user(user_id)
-    if not user:
-        logging.warning(f"User {user_id} not found")
-        return False, humanize("USER_NOT_FOUND")
-    if user[4]:
-        logging.warning(f"User {user_id} is banned")
-        return False, humanize("USER_BANNED")
-    if user[5]:
-        logging.warning(f"User {user_id} is deleted")
-        return False, humanize("USER_DELETED")
-    
-    api_key, error_message = await check_user_and_api_key(user_id)
-    if error_message:
-        logging.warning(f"API key error for user {user_id}: {error_message}")
-        return False, error_message
-    
-    logging.debug(f"API Key for user {user_id} (first 5 chars): {api_key[:5]}...")
-    
-    required_group_ids = os.getenv('REQUIRED_GROUP_IDS', '')
-    if not await check_user_groups(bot, user_id, required_group_ids):
-        logging.warning(f"User {user_id} not in required groups")
-        return False, humanize("NOT_IN_REQUIRED_GROUPS")
-    
-    return True, api_key
 
 async def sandbox_api_action(update: Update, context: ContextTypes.DEFAULT_TYPE, action_func):
     user_id = update.effective_user.id
@@ -45,7 +16,7 @@ async def sandbox_api_action(update: Update, context: ContextTypes.DEFAULT_TYPE,
     access_granted, result = await check_user_access(context.bot, user_id)
     if not access_granted:
         await update.callback_query.answer(text=result)
-        logging.warning(f"Access denied for user {user_id}: {result}")
+        logging.info(f"Access denied for user {user_id}: {result}")
         return
 
     logging.debug(f"Access granted for user {user_id}, executing {action_func.__name__}")
@@ -110,11 +81,6 @@ async def show_api_limits(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def _show_api_limits(update: Update, context: ContextTypes.DEFAULT_TYPE, api_key: str):
     user_id = update.effective_user.id
-    api_key, error_message = await check_user_and_api_key(user_id)
-
-    if error_message:
-        await update.callback_query.answer(text=error_message)
-        return
     limits_message = await get_user_limits(api_key)
 
     if isinstance(limits_message, dict) and "error" in limits_message:

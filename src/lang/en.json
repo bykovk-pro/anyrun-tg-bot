@@ -143,5 +143,6 @@
     "YES": "Yes",
     "YOUR_API_KEYS": "Your API Keys:",
     "YOUR_ANALYSIS_HISTORY": "Your Analysis History:",
-    "YOUR_SANDBOX_API_LIMITS": "Your Sandbox API Limits"
+    "YOUR_SANDBOX_API_LIMITS": "Your Sandbox API Limits",
+    "RATE_LIMIT_EXCEEDED": "You are making requests too frequently. Please wait a few seconds before trying again."
 }
