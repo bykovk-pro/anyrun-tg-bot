@@ -22,12 +22,14 @@ from src.api.bot import (
     restore_database, process_database_restore
 )
 from src.api.sandbox import (
-    get_report_by_uuid, get_history, show_api_limits
+    get_history, show_api_limits,
+    run_url_analysis_handler, run_file_analysis_handler,
+    process_url_analysis, process_file_analysis
 )
 from src.api.users import (
     show_all_users, ban_user, unban_user, delete_user, process_user_action
 )
-from src.api.reports import handle_text_input as reports_handle_text_input, handle_show_recorded_video, handle_show_captured_screenshots
+from src.api.reports import handle_text_input as reports_handle_text_input, handle_show_recorded_video, handle_show_captured_screenshots, handle_get_reports_by_uuid
 from src.lang.director import humanize
 import logging
 from src.api.threat_intelligence import show_threat_intelligence_menu
@@ -38,13 +40,14 @@ def setup_handlers(application: Application):
     application.add_handler(CommandHandler("menu", show_main_menu))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_input))
+    application.add_handler(MessageHandler(filters.Document.ALL & filters.ChatType.PRIVATE, handle_file_input))
 
     application.add_handler(CallbackQueryHandler(show_main_menu, pattern='^main_menu$'))
     application.add_handler(CallbackQueryHandler(show_sandbox_api_menu, pattern='^sandbox_api$'))
     application.add_handler(CallbackQueryHandler(show_settings_menu, pattern='^settings$'))
     application.add_handler(CallbackQueryHandler(show_help_menu, pattern='^help$'))
 
-    application.add_handler(CallbackQueryHandler(get_report_by_uuid, pattern='^get_report_by_uuid$'))
+    application.add_handler(CallbackQueryHandler(handle_get_reports_by_uuid, pattern='^get_report_by_uuid$'))
     application.add_handler(CallbackQueryHandler(get_history, pattern='^get_history$'))
     application.add_handler(CallbackQueryHandler(show_api_limits, pattern='^show_api_limits$'))
 
@@ -80,9 +83,14 @@ def setup_handlers(application: Application):
 
     application.add_handler(CallbackQueryHandler(show_threat_intelligence_menu, pattern='^threat_intelligence$'))
 
+    application.add_handler(CallbackQueryHandler(run_url_analysis_handler, pattern='^run_url_analysis$'))
+    application.add_handler(CallbackQueryHandler(run_file_analysis_handler, pattern='^run_file_analysis$'))
+
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_action = context.user_data.get('next_action')
-    if next_action in ['add_api_key', 'rename_api_key']:
+    if next_action == 'run_url_analysis':
+        await process_url_analysis(update, context)
+    elif next_action in ['add_api_key', 'rename_api_key']:
         await settings_handle_text_input(update, context)
     elif next_action in ['get_reports_by_uuid']:
         await reports_handle_text_input(update, context)
@@ -90,3 +98,14 @@ async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.warning(f"Unknown next_action in handlers: {next_action}")
         await update.message.reply_text(humanize("UNKNOWN_COMMAND"))
         await show_main_menu(update, context)
+
+async def handle_file_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    next_action = context.user_data.get('next_action')
+    if next_action == 'run_file_analysis':
+        await process_file_analysis(update, context)
+    elif next_action == 'restore_database':
+        await process_database_restore(update, context)
+    else:
+        # Если next_action не установлен, игнорируем загрузку файла
+        logging.warning(f"Received file without specific next_action. Ignoring.")
+        await update.message.reply_text(humanize("UNEXPECTED_FILE_UPLOAD"))

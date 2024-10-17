@@ -1,5 +1,6 @@
 from src.db.common import get_db_pool
 import sqlite3
+import aiosqlite
 
 async def db_add_api_key(telegram_id: int, api_key: str, key_name: str):
     db = await get_db_pool()

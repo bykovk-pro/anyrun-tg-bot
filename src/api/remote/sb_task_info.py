@@ -8,16 +8,16 @@ class ResultType(Enum):
     TEXT = "text"
     IMAGE = "image"
 
-def process_task_info(verdict, date, main_object, uuid, tags, result_type: ResultType):
+def process_task_info(verdict, date, main_object, uuid, tags, status, result_type: ResultType):
     if result_type == ResultType.IMAGE:
         return None
     elif result_type == ResultType.TEXT:
-        return process_task_info_text(verdict, date, main_object, uuid, tags)
+        return process_task_info_text(verdict, date, main_object, uuid, tags, status)
     else:
         logging.error(f"Unknown result type: {result_type}")
         return None
 
-def process_task_info_text(verdict, date, main_object, uuid, tags):
+def process_task_info_text(verdict, date, main_object, uuid, tags, status):
     verdict_icon = {
         "No threats detected": "🔵",
         "Suspicious activity": "🟡",
@@ -26,6 +26,13 @@ def process_task_info_text(verdict, date, main_object, uuid, tags):
         1: "🟡",
         2: "🔴"
     }.get(verdict, "⚪")
+
+    status_icon = {
+        "queued": "⏳",
+        "running": "▶️",
+        "completed": "✅",
+        "failed": "❌"
+    }.get(status, "❓")
 
     try:
         if isinstance(date, str):
@@ -42,15 +49,19 @@ def process_task_info_text(verdict, date, main_object, uuid, tags):
 
     if tags:
         escaped_tags = ", ".join(f"[{escape_markdown(tag)}]" for tag in tags)
-        tags_string = f"🏷️\u00A0{escaped_tags}"
+        tags_string = f"🏷️ {escaped_tags}"
     else:
         tags_string = ""
 
     result = (
-        f"{verdict_icon}\u00A0***{formatted_date}***\n"
-        f"📄\u00A0`{escaped_main_object}`\n"
-        f"🆔\u00A0`{escaped_uuid}`\n"
-        f"{tags_string}"
+        f"{verdict_icon} ***{formatted_date}***\n"
+        f"📄 `{escaped_main_object}`\n"
+        f"🆔 `{escaped_uuid}`\n"
     )
+
+    if status in ['queued', 'running']:
+        result += f"{status_icon} Status: {escape_markdown(status.capitalize())}\n"
+
+    result += tags_string
 
     return result.strip()

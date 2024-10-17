@@ -18,8 +18,6 @@ async def get_report_by_uuid(api_key: str, uuid: str):
         try:
             async with session.get(url, headers=headers) as response:
                 logging.debug(f"Received response with status: {response.status}")
-                response_text = await response.text()
-                logging.debug(f"Response content: {response_text[:200]}...")    
                 if response.status == 200:
                     data = await response.json()
                     analysis = data.get("data", {}).get("analysis", {})
@@ -28,7 +26,7 @@ async def get_report_by_uuid(api_key: str, uuid: str):
                 else:
                     error_message = await response.json()
                     logging.error(f"Error response: {error_message}")
-                    return {"error": error_message.get("message", humanize("UNKNOWN_ERROR"))}
+                    return {"error": True, "message": error_message.get("message", humanize("UNKNOWN_ERROR"))}
         except Exception as e:
             logging.error(f"Error fetching report: {str(e)}")
-            return {"error": str(e)}
+            return {"error": True, "message": str(e)}

@@ -119,13 +119,6 @@ async def check_user_access(bot, user_id: int):
         logging.warning(f"User {user_id} is deleted")
         return False, humanize("USER_DELETED")
     
-    global last_api_call_time
-    current_time = time.time()
-    if user_id in last_api_call_time and current_time - last_api_call_time[user_id] < 5:
-        logging.warning(f"Rate limit exceeded for user {user_id}")
-        return False, humanize("RATE_LIMIT_EXCEEDED")
-    last_api_call_time[user_id] = current_time
-    
     api_key, error_message = await check_user_and_api_key(user_id)
     if error_message:
         logging.warning(f"API key error for user {user_id}: {error_message}")

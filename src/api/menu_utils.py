@@ -7,8 +7,8 @@ def create_sandbox_api_menu():
     keyboard = [
         [InlineKeyboardButton(humanize("MENU_BUTTON_RUN_URL_ANALYSIS"), callback_data='run_url_analysis')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_RUN_FILE_ANALYSIS"), callback_data='run_file_analysis')],
-        [InlineKeyboardButton(humanize("MENU_BUTTON_GET_REPORT_BY_UUID"), callback_data='get_report_by_uuid')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_GET_HISTORY"), callback_data='get_history')],
+        [InlineKeyboardButton(humanize("MENU_BUTTON_GET_REPORT_BY_UUID"), callback_data='get_report_by_uuid')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_SHOW_API_LIMITS"), callback_data='show_api_limits')],
         [InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='main_menu')]
     ]

@@ -26,6 +26,23 @@ MIGRATIONS = [
             "ALTER TABLE users DROP COLUMN lang",
         ]
     },
+    {
+        "bot_version": "0.6.6",
+        "up": [
+            """
+            CREATE TABLE IF NOT EXISTS active_tasks (
+                telegram_id BIGINT,
+                uuid TEXT PRIMARY KEY,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
+            )
+            """,
+        ],
+        "down": [
+            "DROP TABLE IF EXISTS active_tasks",
+        ]
+    },
 ]
 
 async def get_current_version():

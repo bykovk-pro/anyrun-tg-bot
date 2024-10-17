@@ -65,8 +65,9 @@ async def display_report_info(update: Update, context: ContextTypes.DEFAULT_TYPE
     date = report.get("creationText", "")
     uuid = report.get("uuid", "Unknown")
     tags = [tag['tag'] for tag in report.get("tags", []) if 'tag' in tag]
+    status = "completed"  # Assuming the report is completed if we can fetch it
 
-    text_message = process_task_info(verdict, date, name, uuid, tags, ResultType.TEXT)
+    text_message = process_task_info(verdict, date, name, uuid, tags, status, ResultType.TEXT)
 
     await update.message.reply_text(text_message, parse_mode='MarkdownV2')
     await show_report_menu(update, context, report)
