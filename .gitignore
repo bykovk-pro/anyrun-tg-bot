@@ -17,6 +17,7 @@ __pycache__/
 Thumbs.db
 *.log
 *.db
+*.bak
 *.sqlite3
 *.tmp
 config.ini
