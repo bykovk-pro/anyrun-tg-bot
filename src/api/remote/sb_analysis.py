@@ -1,7 +1,5 @@
 import logging
 import aiohttp
-import asyncio
-from src.lang.director import humanize
 from src.db.active_tasks import add_active_task
 
 async def run_url_analysis(api_key: str, url: str, telegram_id: int):

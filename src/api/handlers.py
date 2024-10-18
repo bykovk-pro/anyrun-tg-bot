@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import (
     CommandHandler, MessageHandler, CallbackQueryHandler, 
-    ConversationHandler, filters, Application, ContextTypes
+    filters, Application, ContextTypes
 )
 from src.api.menu import (
     show_main_menu, show_sandbox_api_menu, show_settings_menu
@@ -27,7 +27,7 @@ from src.api.sandbox import (
     process_url_analysis, process_file_analysis
 )
 from src.api.users import (
-    show_all_users, ban_user, unban_user, delete_user, process_user_action
+    show_all_users, ban_user, unban_user, delete_user
 )
 from src.api.reports import handle_text_input as reports_handle_text_input, handle_show_recorded_video, handle_show_captured_screenshots, handle_get_reports_by_uuid
 from src.lang.director import humanize
@@ -86,6 +86,8 @@ def setup_handlers(application: Application):
     application.add_handler(CallbackQueryHandler(run_url_analysis_handler, pattern='^run_url_analysis$'))
     application.add_handler(CallbackQueryHandler(run_file_analysis_handler, pattern='^run_file_analysis$'))
 
+    application.add_handler(CallbackQueryHandler(show_all_users, pattern=r'^show_users_page_\d+$'))
+
 async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     next_action = context.user_data.get('next_action')
     if next_action == 'run_url_analysis':
@@ -106,6 +108,5 @@ async def handle_file_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif next_action == 'restore_database':
         await process_database_restore(update, context)
     else:
-        # Если next_action не установлен, игнорируем загрузку файла
         logging.warning(f"Received file without specific next_action. Ignoring.")
         await update.message.reply_text(humanize("UNEXPECTED_FILE_UPLOAD"))

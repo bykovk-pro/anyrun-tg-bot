@@ -7,7 +7,6 @@ from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.director import backup, restore
 from src.api.admin import show_manage_bot_menu
-from src.config import load_config
 
 async def show_system_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     system_info = f"""

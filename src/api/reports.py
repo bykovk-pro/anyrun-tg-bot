@@ -1,9 +1,8 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo
+from telegram import Update, InputMediaPhoto
 from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.api.remote.sb_reports import get_report_by_uuid
-from src.api.security import check_user_and_api_key
 from src.api.menu import show_sandbox_api_menu
 import validators
 from src.api.remote.sb_task_info import process_task_info, ResultType

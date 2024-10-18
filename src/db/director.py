@@ -9,7 +9,6 @@ from src.db.common import get_db_pool, DB_FILE, ROOT_DIR
 from src.db.users import db_add_user
 from src.db.migrations import run_migrations
 from src.config import load_config
-import zipfile
 
 BOT_VERSION = version("anyrun-tg-bot")
 

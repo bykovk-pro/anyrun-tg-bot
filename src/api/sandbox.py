@@ -4,12 +4,12 @@ from telegram.ext import ContextTypes
 from telegram.error import BadRequest
 from src.api.remote.sb_user import get_user_limits
 from src.api.remote.sb_history import get_analysis_history
-from src.api.reports import handle_get_reports_by_uuid, display_report_info
+from src.api.reports import display_report_info
 from src.api.security import check_user_access
 from src.lang.director import humanize
 from src.api.remote.sb_task_info import process_task_info, ResultType
 from src.api.remote.sb_analysis import run_url_analysis, run_file_analysis
-from src.api.menu_utils import create_sandbox_api_menu, escape_markdown
+from src.api.menu_utils import create_sandbox_api_menu
 from src.api.remote.sb_status import get_analysis_status
 from src.api.remote.sb_reports import get_report_by_uuid as remote_get_report_by_uuid
 from src.db.active_tasks import set_task_inactive
@@ -23,7 +23,7 @@ async def sandbox_api_action(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
     access_granted, api_key = await check_user_access(context.bot, user_id)
     if not access_granted:
-        await update.callback_query.answer(text=api_key)  # В этом случае api_key содержит сообщение об ошибке
+        await update.callback_query.answer(text=api_key)
         logging.info(f"Access denied for user {user_id}: {api_key}")
         return
 
@@ -54,7 +54,7 @@ async def process_url_analysis(update: Update, context: ContextTypes.DEFAULT_TYP
 
     access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
     if not access_granted:
-        await update.message.reply_text(api_key)  # api_key содержит сообщение об ошибке
+        await update.message.reply_text(api_key)
         return
 
     result = await run_url_analysis(api_key, url, update.effective_user.id)
@@ -74,7 +74,7 @@ async def process_file_analysis(update: Update, context: ContextTypes.DEFAULT_TY
 
     access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
     if not access_granted:
-        await update.message.reply_text(api_key)  # api_key содержит сообщение об ошибке
+        await update.message.reply_text(api_key)
         return
 
     file = await context.bot.get_file(update.message.document.file_id)
@@ -97,7 +97,7 @@ async def monitor_analysis_status(update: Update, context: ContextTypes.DEFAULT_
     )
 
     last_status = None
-    max_attempts = 60  # 5 минут (60 * 5 секунд)
+    max_attempts = 60
     for _ in range(max_attempts):
         status = await get_analysis_status(api_key, task_id)
         
@@ -127,7 +127,7 @@ async def monitor_analysis_status(update: Update, context: ContextTypes.DEFAULT_
                     )
             return
 
-        await asyncio.sleep(5)  # Ждем 5 секунд перед следующей проверкой
+        await asyncio.sleep(5)
 
     await message.edit_text(humanize("ANALYSIS_TAKING_LONG").format(uuid=task_id))
 
@@ -199,7 +199,7 @@ async def _show_api_limits(update: Update, context: ContextTypes.DEFAULT_TYPE, a
 async def show_sandbox_api_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
     if not access_granted:
-        await send_message(update, api_key)  # api_key содержит сообщение об ошибке
+        await send_message(update, api_key)
         return
 
     reply_markup = create_sandbox_api_menu()
@@ -213,5 +213,4 @@ async def send_message(update: Update, text: str, reply_markup=None, parse_mode=
             return await update.message.reply_text(text, reply_markup=reply_markup, parse_mode=parse_mode)
     except Exception as e:
         logging.error(f"Error sending message: {str(e)}")
-        # Если возникла ошибка, попроб��ем отправить сообщение без форматирования
         return await send_message(update, text, reply_markup=reply_markup, parse_mode=None)

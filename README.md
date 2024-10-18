@@ -8,7 +8,7 @@ This Telegram bot provides a user-friendly interface to interact with the ANY.RU
 - Retrieve analysis results and reports
 - Check the status of ongoing analyses
 - Manage API keys within the Telegram interface
-- Automatic language detection and support
+- Automatic user language detection
 - Admin panel for user management and system operations
 
 ## Getting Started

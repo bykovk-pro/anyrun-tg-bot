@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from telegram import Update, User
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram.error import BadRequest, TelegramError, NetworkError
 from src.lang.context import set_user_language_getter, set_language_for_user
 from src.lang.director import humanize

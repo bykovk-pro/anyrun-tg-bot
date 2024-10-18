@@ -1,4 +1,3 @@
-from typing import Optional
 from telegram import User
 from contextvars import ContextVar
 

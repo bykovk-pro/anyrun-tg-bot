@@ -2,8 +2,8 @@ import datetime
 import re
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Chat
-from telegram.ext import ContextTypes, CallbackQueryHandler, MessageHandler, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.api_keys import (
     db_add_api_key, db_get_api_keys, db_delete_api_key, 

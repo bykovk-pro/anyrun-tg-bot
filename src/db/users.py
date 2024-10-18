@@ -1,4 +1,5 @@
 import logging
+import aiosqlite
 from src.db.common import get_db_pool
 
 async def db_add_user(telegram_id: int, is_admin: bool = False):
@@ -51,6 +52,7 @@ async def db_is_user_admin(telegram_id: int):
 async def db_get_all_users():
     try:
         db = await get_db_pool()
+        db.row_factory = aiosqlite.Row  # Use Row factory to get dict-like access
         async with db.execute("SELECT * FROM users ORDER BY telegram_id") as cursor:
             users = await cursor.fetchall()
             logging.debug(f"Retrieved {len(users)} users from the database.")

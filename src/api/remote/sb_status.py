@@ -21,7 +21,6 @@ async def get_analysis_status(api_key: str, task_id: str):
                         data = json.loads(line[6:].decode('utf-8'))
                         return process_status_response(data)
                 
-                # Если мы дошли до этой точки, значит задача завершена
                 return {"status": "completed", "message": humanize("ANALYSIS_STATUS_COMPLETED")}
         except Exception as e:
             logging.error(f"Error getting analysis status: {str(e)}")

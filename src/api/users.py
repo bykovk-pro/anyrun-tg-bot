@@ -3,30 +3,50 @@ from telegram.ext import ContextTypes
 from src.lang.director import humanize
 from src.db.users import db_get_all_users, db_ban_user_by_id, db_unban_user_by_id, db_delete_user_by_id
 from src.api.admin import show_manage_users_menu
+import logging
 
-def create_show_all_users_menu(users, page=0, users_per_page=10):
-    keyboard = []
-    start = page * users_per_page
-    end = start + users_per_page
-    for user in users[start:end]:
-        keyboard.append([InlineKeyboardButton(f"{user['telegram_id']} {user['first_access_date']} {user['last_access_date']} {user['is_admin']} {user['is_banned']} {user['is_deleted']}", callback_data=f"user_info_{user['telegram_id']}")])
-    
+def create_navigation_buttons(page, total_users, users_per_page):
     nav_buttons = []
     if page > 0:
         nav_buttons.append(InlineKeyboardButton("◀️ Previous", callback_data=f"show_users_page_{page-1}"))
-    if end < len(users):
+    if (page + 1) * users_per_page < total_users:
         nav_buttons.append(InlineKeyboardButton("Next ▶️", callback_data=f"show_users_page_{page+1}"))
-    if nav_buttons:
-        keyboard.append(nav_buttons)
-    
-    keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_users')])
-    return InlineKeyboardMarkup(keyboard)
+    return nav_buttons
 
 async def show_all_users(update: Update, context: ContextTypes.DEFAULT_TYPE, page=0):
     users = await db_get_all_users()
-    menu_text = humanize("SHOW_ALL_USERS_MENU_TEXT")
-    reply_markup = create_show_all_users_menu(users, page)
-    await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
+    if not users:
+        await update.callback_query.edit_message_text(humanize("NO_USERS_FOUND"))
+        return
+
+    users_per_page = 2
+    start = page * users_per_page
+    end = start + users_per_page
+    user_messages = []
+
+    for user in users[start:end]:
+        user_info = (
+            f"ID: `{user['telegram_id']}`\n"
+            f"First seen: {user['first_access_date']}\n"
+            f"Last seen: {user['last_access_date']}\n"
+            f"Admin: {user['is_admin']}\n"
+            f"Banned: {user['is_banned']}\n"
+            "----------------------\n"
+        )
+        user_messages.append(user_info)
+
+    menu_text = humanize("SHOW_ALL_USERS_MENU_TEXT") + "\n\n" + "".join(user_messages)
+    nav_buttons = create_navigation_buttons(page, len(users), users_per_page)
+    keyboard = [nav_buttons] if nav_buttons else []
+    keyboard.append([InlineKeyboardButton(humanize("MENU_BUTTON_BACK"), callback_data='manage_users')])
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    current_message = update.callback_query.message.text
+    if current_message != menu_text:
+        await update.callback_query.edit_message_text(menu_text, reply_markup=reply_markup)
+    else:
+        logging.debug("Message content is the same, not updating.")
 
 async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.edit_message_text(humanize("BAN_USER_PROMPT"))

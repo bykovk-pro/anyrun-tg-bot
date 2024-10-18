@@ -1,9 +1,8 @@
 import logging
-from telegram import Bot, Chat
+from telegram import Bot
 import re
 from telegram.error import TelegramError
-from telegram.constants import ChatMemberStatus, ChatType
-import time
+from telegram.constants import ChatMemberStatus
 from src.db.users import db_get_user, db_is_user_admin
 from src.db.api_keys import db_get_api_keys
 from src.lang.director import humanize
