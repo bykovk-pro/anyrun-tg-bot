@@ -1,7 +1,9 @@
 import logging
 import aiohttp
 from src.lang.director import humanize
+from src.lang.decorators import with_locale
 
+@with_locale
 async def get_user_limits(api_key: str):
     url = "https://api.any.run/v1/user"
     headers = {
@@ -14,24 +16,16 @@ async def get_user_limits(api_key: str):
                 if response.status == 200:
                     data = await response.json()
                     limits = data.get('data', {}).get('limits', {}).get('api', {})
-                    month = limits.get('month', -1)
-                    day = limits.get('day', -1)
-                    hour = limits.get('hour', -1)
-                    minute = limits.get('minute', -1)
-
-                    return (
-                        f"{humanize('YOUR_SANDBOX_API_LIMITS')}:\n"
-                        f"{humanize('MONTH')} - {'Unlimited' if month == -1 else month}\n"
-                        f"{humanize('DAY')} - {'Unlimited' if day == -1 else day}\n"
-                        f"{humanize('HOUR')} - {'Unlimited' if hour == -1 else hour}\n"
-                        f"{humanize('MINUTE')} - {'Unlimited' if minute == -1 else minute}"
-                    )
+                    return {
+                        "month": limits.get('month', -1),
+                        "day": limits.get('day', -1),
+                        "hour": limits.get('hour', -1),
+                        "minute": limits.get('minute', -1)
+                    }
                 else:
-                    try:
-                        error_message = await response.json()
-                    except ValueError:
-                        error_message = {"message": "Response is not valid JSON"}
-                    return {"error": error_message.get("message", humanize("UNKNOWN_ERROR"))}
+                    error_message = await response.text()
+                    logging.error(f"API error: {error_message}")
+                    return {"error": await humanize("API_LIMITS_EXCEEDED")}
         except Exception as e:
-            logging.error(f"Error fetching user limits: {str(e)}")
-            return {"error": str(e)}
+            logging.error(f"Error getting user limits: {e}")
+            return {"error": await humanize("ERROR_OCCURRED")}

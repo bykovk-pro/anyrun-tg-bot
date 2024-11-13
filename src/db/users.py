@@ -1,107 +1,47 @@
 import logging
-import aiosqlite
-from src.db.common import get_db_pool
+from src.db.pool import get_db_pool
+from src.lang.director import humanize
+from src.lang.decorators import with_locale
 
-async def db_add_user(telegram_id: int, is_admin: bool = False):
+@with_locale
+async def db_add_user(telegram_id: int) -> bool:
     try:
         db = await get_db_pool()
         await db.execute('''
-            INSERT INTO users (telegram_id, is_admin, first_access_date, last_access_date)
-            VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO users (telegram_id, first_access_date, last_access_date)
+            VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT(telegram_id) DO UPDATE SET
-            last_access_date = CURRENT_TIMESTAMP,
-            is_admin = CASE 
-                WHEN excluded.is_admin = 1 THEN 1
-                ELSE users.is_admin
-            END
-        ''', (telegram_id, is_admin))
+            last_access_date = CURRENT_TIMESTAMP
+        ''', (telegram_id,))
         await db.commit()
         logging.info(f"User {telegram_id} added or updated in the database")
+        return True
     except Exception as e:
         logging.error(f"Error adding or updating user: {e}")
-        raise
+        return False
 
-async def db_get_user(telegram_id: int):
+@with_locale
+async def db_get_user(telegram_id: int) -> tuple:
     try:
         db = await get_db_pool()
         async with db.execute('SELECT * FROM users WHERE telegram_id = ?', (telegram_id,)) as cursor:
             return await cursor.fetchone()
     except Exception as e:
         logging.error(f"Error getting user: {e}")
-        raise
+        return None
 
-async def db_update_user_language(telegram_id: int, lang: str):
+@with_locale
+async def increment_api_requests_count(telegram_id: int) -> bool:
     try:
         db = await get_db_pool()
-        await db.execute('UPDATE users SET lang = ? WHERE telegram_id = ?', (lang, telegram_id))
-        await db.commit()
-    except Exception as e:
-        logging.error(f"Error updating user language: {e}")
-        raise
-
-async def db_is_user_admin(telegram_id: int):
-    try:
-        db = await get_db_pool()
-        async with db.execute('SELECT is_admin FROM users WHERE telegram_id = ?', (telegram_id,)) as cursor:
-            result = await cursor.fetchone()
-            return result[0] if result else False
-    except Exception as e:
-        logging.error(f"Error checking if user is admin: {e}")
-        raise
-
-async def db_get_all_users():
-    try:
-        db = await get_db_pool()
-        db.row_factory = aiosqlite.Row  # Use Row factory to get dict-like access
-        async with db.execute("SELECT * FROM users ORDER BY telegram_id") as cursor:
-            users = await cursor.fetchall()
-            logging.debug(f"Retrieved {len(users)} users from the database.")
-            return users
-    except Exception as e:
-        logging.error(f"Error getting all users: {e}")
-        return []
-
-async def db_ban_user_by_id(user_id):
-    try:
-        db = await get_db_pool()
-        await db.execute("UPDATE users SET is_banned = TRUE WHERE telegram_id = ?", (int(user_id),))
+        async with db.cursor() as cursor:
+            await cursor.execute('''
+                UPDATE users 
+                SET api_requests_count = api_requests_count + 1 
+                WHERE telegram_id = ?
+            ''', (telegram_id,))
         await db.commit()
         return True
     except Exception as e:
-        logging.error(f"Error banning user {user_id}: {e}")
+        logging.error(f"Error incrementing API requests count: {e}")
         return False
-
-async def db_unban_user_by_id(user_id):
-    try:
-        db = await get_db_pool()
-        await db.execute("UPDATE users SET is_banned = FALSE WHERE telegram_id = ?", (int(user_id),))
-        await db.commit()
-        return True
-    except Exception as e:
-        logging.error(f"Error unbanning user {user_id}: {e}")
-        return False
-
-async def db_delete_user_by_id(user_id):
-    try:
-        db = await get_db_pool()
-        await db.execute("UPDATE users SET is_deleted = TRUE WHERE telegram_id = ?", (int(user_id),))
-        await db.commit()
-        return True
-    except Exception as e:
-        logging.error(f"Error deleting user {user_id}: {e}")
-        return False
-
-async def db_add_or_update_user(telegram_id: int, is_admin: bool = False):
-    try:
-        db = await get_db_pool()
-        await db.execute('''
-            INSERT INTO users (telegram_id, is_admin, last_access_date)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(telegram_id) DO UPDATE SET
-            last_access_date = CURRENT_TIMESTAMP
-        ''', (telegram_id, is_admin))
-        await db.commit()
-        logging.info(f"User {telegram_id} added or updated in the database")
-    except Exception as e:
-        logging.error(f"Error adding or updating user: {e}")
-        raise

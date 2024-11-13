@@ -1,218 +1,265 @@
-from telegram import Update
-from telegram.ext import (
-    CommandHandler, MessageHandler, CallbackQueryHandler, 
-    filters, Application, ContextTypes
-)
-from src.api.menu import (
-    show_main_menu, show_sandbox_api_menu, show_settings_menu
-)
-from src.api.settings import (
-    manage_api_key, show_api_keys, add_api_key, delete_api_key,
-    change_api_key_name, set_active_api_key, handle_api_key_actions,
-    check_access_rights, handle_group_info, handle_text_input as settings_handle_text_input
-)
-from src.api.help import (
-    show_help_menu
-)
-from src.api.admin import (
-    show_admin_panel, show_manage_users_menu, show_manage_bot_menu 
-)
-from src.api.bot import (
-    show_system_info, backup_database,
-    restore_database, process_database_restore
-)
-from src.api.sandbox import (
-    get_history, show_api_limits,
-    run_url_analysis_handler, run_file_analysis_handler,
-    process_url_analysis, process_file_analysis, extract_url
-)
-from src.api.users import (
-    show_all_users, ban_user, unban_user, delete_user
-)
-from src.api.reports import handle_text_input as reports_handle_text_input, handle_show_recorded_video, handle_show_captured_screenshots, handle_get_reports_by_uuid
-from src.lang.director import humanize
+from dataclasses import dataclass
+from typing import List
 import logging
-from src.api.threat_intelligence import show_threat_intelligence_menu
-import validators
 import asyncio
-from src.api.remote.sb_analysis import run_url_analysis
+from telegram import Update
+from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
+from telegram.helpers import escape_markdown
+from src.lang.director import humanize
+from src.db.users import db_add_user
+from src.api.settings import process_api_key
+from src.api.remote.sb_analysis import run_file_analysis, run_url_analysis
+from src.api.remote.sb_status import get_analysis_status
+from src.api.remote.sb_reports import get_report_by_uuid
+from src.api.reports import display_report_info
 from src.api.security import check_user_access
-from src.api.sandbox import monitor_analysis_status
+from src.lang.decorators import with_locale, localized_message
 
+@dataclass
+class AnalysisItem:
+    type: str
+    content: str
+    name: str = ''
 
-def setup_handlers(application: Application):
-    application.add_handler(CommandHandler("start", show_main_menu))
-    application.add_handler(CommandHandler("menu", show_main_menu))
+@with_locale
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    await db_add_user(user_id)
+    await localized_message("WELCOME_MESSAGE")(update)
 
-    application.add_handler(MessageHandler(
-        filters.FORWARDED & (filters.Document.ALL | filters.TEXT), 
-        handle_forwarded_message
-    ), group=1)
-    
-    application.add_handler(MessageHandler(
-        filters.Document.ALL & filters.ChatType.PRIVATE & ~filters.FORWARDED,
-        handle_file_input
-    ), group=2)
+@with_locale
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await localized_message("HELP_TEXT")(update)
+    await localized_message("GITHUB_LINK")(update)
 
-    application.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND & ~filters.FORWARDED, 
-        handle_text_input
-    ), group=2)
+@with_locale
+async def apikey(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await localized_message("ENTER_API_KEY")(update)
+    context.user_data['next_action'] = 'process_api_key'
 
-    application.add_handler(CallbackQueryHandler(show_main_menu, pattern='^main_menu$'))
-    application.add_handler(CallbackQueryHandler(show_sandbox_api_menu, pattern='^sandbox_api$'))
-    application.add_handler(CallbackQueryHandler(show_settings_menu, pattern='^settings$'))
-    application.add_handler(CallbackQueryHandler(show_help_menu, pattern='^help$'))
+@with_locale
+async def getreport(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await localized_message("ENTER_UUID")(update)
+    context.user_data['next_action'] = 'process_report_uuid'
 
-    application.add_handler(CallbackQueryHandler(handle_get_reports_by_uuid, pattern='^get_report_by_uuid$'))
-    application.add_handler(CallbackQueryHandler(get_history, pattern='^get_history$'))
-    application.add_handler(CallbackQueryHandler(show_api_limits, pattern='^show_api_limits$'))
-
-    application.add_handler(CallbackQueryHandler(manage_api_key, pattern='^manage_api_key$'))
-    application.add_handler(CallbackQueryHandler(show_api_keys, pattern='^show_api_keys$'))
-    application.add_handler(CallbackQueryHandler(add_api_key, pattern='^add_api_key$'))
-    application.add_handler(CallbackQueryHandler(delete_api_key, pattern='^delete_api_key$'))
-    application.add_handler(CallbackQueryHandler(change_api_key_name, pattern='^change_api_key_name$'))
-    application.add_handler(CallbackQueryHandler(set_active_api_key, pattern='^set_active_api_key$'))
-    application.add_handler(CallbackQueryHandler(handle_api_key_actions, pattern='^(delete_|rename_|activate_|back_to_manage_api_key)'))
-
-    application.add_handler(CallbackQueryHandler(check_access_rights, pattern='^check_access_rights$'))
-
-    application.add_handler(CallbackQueryHandler(show_admin_panel, pattern='^admin_panel$'))
-    application.add_handler(CallbackQueryHandler(show_manage_users_menu, pattern='^manage_users$'))
-    application.add_handler(CallbackQueryHandler(show_manage_bot_menu, pattern='^manage_bot$'))
-
-    application.add_handler(CallbackQueryHandler(show_system_info, pattern='^show_system_info$'))
-    application.add_handler(CallbackQueryHandler(backup_database, pattern='^backup_database$'))
-    application.add_handler(CallbackQueryHandler(restore_database, pattern='^restore_database$'))
-
-    application.add_handler(CallbackQueryHandler(show_all_users, pattern='^show_all_users$'))
-    application.add_handler(CallbackQueryHandler(ban_user, pattern='^ban_user$'))
-    application.add_handler(CallbackQueryHandler(unban_user, pattern='^unban_user$'))
-    application.add_handler(CallbackQueryHandler(delete_user, pattern='^delete_user$'))
-
-    application.add_handler(MessageHandler(filters.Document.ALL, process_database_restore))
-
-    application.add_handler(CallbackQueryHandler(handle_group_info, pattern='^group_info_'))
-
-    application.add_handler(CallbackQueryHandler(handle_show_recorded_video, pattern='^show_recorded_video$'))
-    application.add_handler(CallbackQueryHandler(handle_show_captured_screenshots, pattern='^show_captured_screenshots$'))
-
-    application.add_handler(CallbackQueryHandler(show_threat_intelligence_menu, pattern='^threat_intelligence$'))
-
-    application.add_handler(CallbackQueryHandler(run_url_analysis_handler, pattern='^run_url_analysis$'))
-    application.add_handler(CallbackQueryHandler(run_file_analysis_handler, pattern='^run_file_analysis$'))
-
-    application.add_handler(CallbackQueryHandler(show_all_users, pattern=r'^show_users_page_\d+$'))
-
-async def handle_forwarded_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle any forwarded message (file or text with URL)."""
-    message = update.message
-    try:
-        # Проверяем сначала на наличие файла
-        if message.document:
-            logging.info(f"Processing forwarded file: {message.document.file_name}")
-            await process_forwarded_file(update, context, message.document)
-            return
-
-        # Если нет файла, проверяем на наличие URL
-        message_text = message.text or message.caption or ''
-        
-        # Проверяем entities на наличие URL
-        url = None
-        if message.entities:
-            for entity in message.entities:
-                if entity.type == 'text_link' and hasattr(entity, 'url'):
-                    url = entity.url
-                    break
-                elif entity.type == 'url' and message.text:
-                    url_text = message.text[entity.offset:entity.offset + entity.length]
-                    url = url_text
-                    break
-        
-        # Если URL не найден в entities, ищем в тексте
-        if not url and message_text:
-            url = extract_url(message_text)
-        
-        if url and validators.url(url):
-            logging.info(f"Found valid URL in forwarded message: {url}")
-            await process_forwarded_url(update, context, url)
-            return
-        
-        logging.debug("Forwarded message contains neither file nor URL")
-        
-    except Exception as e:
-        logging.error(f"Error processing forwarded message: {e}")
-        await update.message.reply_text(humanize("ERROR_OCCURRED"))
-
-async def handle_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle regular text input based on next_action."""
-    next_action = context.user_data.get('next_action')
-    
-    if next_action == 'run_url_analysis':
-        await process_url_analysis(update, context)
-    elif next_action in ['add_api_key', 'rename_api_key']:
-        await settings_handle_text_input(update, context)
-    elif next_action in ['get_reports_by_uuid']:
-        await reports_handle_text_input(update, context)
-    else:
-        logging.debug(f"No next_action found in context. Current user_data: {context.user_data}")
-        await update.message.reply_text(humanize("UNKNOWN_COMMAND"))
-        await show_main_menu(update, context)
-
-async def handle_file_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle regular file input based on next_action."""
-    next_action = context.user_data.get('next_action')
-    
-    if next_action == 'run_file_analysis':
-        await process_file_analysis(update, context)
-    elif next_action == 'restore_database':
-        await process_database_restore(update, context)
-    else:
-        logging.warning(f"Received file without specific next_action. Ignoring.")
-        await update.message.reply_text(humanize("UNEXPECTED_FILE_UPLOAD"))
-
-async def process_forwarded_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
-    """Process URL from forwarded message without disrupting current menu state."""
+@with_locale
+async def process_report_uuid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
     if not access_granted:
         await update.message.reply_text(api_key)
         return
 
-    logging.info(f"Processing forwarded URL analysis for user {update.effective_user.id}: {url}")
-    result = await run_url_analysis(api_key, url, update.effective_user.id)
-
-    if 'error' in result:
-        logging.error(f"URL analysis error for user {update.effective_user.id}: {result['error']}")
-        await update.message.reply_text(humanize("URL_ANALYSIS_ERROR").format(error=result['error']))
-    else:
-        logging.info(f"URL analysis submitted for user {update.effective_user.id}, task_id: {result['task_id']}")
-        await update.message.reply_text(humanize("URL_ANALYSIS_SUBMITTED_CHECK_ACTIVE").format(uuid=result['task_id']))
-        asyncio.create_task(monitor_analysis_status(update, context, api_key, result['task_id']))
-
-async def process_forwarded_file(update: Update, context: ContextTypes.DEFAULT_TYPE, document):
-    """Process file from forwarded message without disrupting current menu state."""
-    access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
-    if not access_granted:
-        await update.message.reply_text(api_key)
+    uuid = update.message.text.strip()
+    report = await get_report_by_uuid(api_key, uuid)
+    
+    if report.get('error'):
+        await update.message.reply_text(report['message'])
+        context.user_data.pop('next_action', None)
         return
-
-    logging.info(f"Processing forwarded file analysis for user {update.effective_user.id}: {document.file_name}")
-    
-    try:
-        file = await context.bot.get_file(document.file_id)
-        file_content = await file.download_as_bytearray()
         
-        result = await run_file_analysis(api_key, file_content, document.file_name, update.effective_user.id)
+    await display_report_info(update, context, report)
+    context.user_data.pop('next_action', None)
 
-        if 'error' in result:
-            logging.error(f"File analysis error for user {update.effective_user.id}: {result['error']}")
-            await update.message.reply_text(humanize("FILE_ANALYSIS_ERROR").format(error=result['error']))
-        else:
-            logging.info(f"File analysis submitted for user {update.effective_user.id}, task_id: {result['task_id']}")
-            await update.message.reply_text(humanize("FILE_ANALYSIS_SUBMITTED_CHECK_ACTIVE").format(uuid=result['task_id']))
-            asyncio.create_task(monitor_analysis_status(update, context, api_key, result['task_id']))
+@with_locale
+async def monitor_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE, task_id: str, api_key: str):
+    retry_count = 0
+    max_retries = 60
     
-    except Exception as e:
-        logging.error(f"Error processing forwarded file: {e}")
-        await update.message.reply_text(humanize("ERROR_OCCURRED"))
+    while retry_count < max_retries:
+        try:
+            status_result = await get_analysis_status(api_key, task_id)
+            
+            if status_result.get('error'):
+                logging.error(f"Error getting status: {status_result['error']}")
+                await localized_message("STATUS_CHECK_ERROR")(update)
+                return
+            
+            status = status_result.get('status')
+            if status == 'completed':
+                report = await get_report_by_uuid(api_key, task_id)
+                if report.get('error'):
+                    await localized_message("REPORT_ERROR")(update)
+                else:
+                    await display_report_info(update, context, report)
+                return
+            elif status == 'failed':
+                await localized_message("ANALYSIS_FAILED")(update)
+                return
+            
+            await asyncio.sleep(5)
+            retry_count += 1
+            
+        except Exception as e:
+            logging.error(f"Error monitoring analysis: {e}")
+            await localized_message("MONITORING_ERROR")(update)
+            return
+    
+    await localized_message("ANALYSIS_TIMEOUT")(update)
+
+@with_locale
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    next_action = context.user_data.get('next_action')
+    if next_action == 'process_api_key':
+        context.user_data.pop('next_action', None)
+        await process_api_key(update, context)
+        return
+    elif next_action == 'process_report_uuid':
+        context.user_data.pop('next_action', None)
+        await process_report_uuid(update, context)
+        return
+    elif next_action == 'select_item':
+        if not update.message.text or not update.message.text.isdigit():
+            await localized_message("INVALID_SELECTION")(update)
+            return
+            
+        selection = int(update.message.text)
+        items = context.user_data.get('analysis_items', [])
+        
+        if not items or selection < 1 or selection > len(items):
+            await localized_message("INVALID_SELECTION")(update)
+            return
+            
+        selected_item = items[selection - 1]
+        context.user_data.pop('next_action', None)
+        context.user_data.pop('analysis_items', None)
+        
+        access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
+        if not access_granted:
+            await update.message.reply_text(api_key)
+            return
+        
+        try:
+            if selected_item.type == 'file':
+                file = selected_item.content
+                file_content = await context.bot.get_file(file.file_id)
+                file_bytes = await file_content.download_as_bytearray()
+                result = await run_file_analysis(api_key, file_bytes, file.file_name, update.effective_user.id)
+            else:
+                result = await run_url_analysis(api_key, selected_item.content, update.effective_user.id)
+                
+            if result.get('error'):
+                await localized_message("ANALYSIS_ERROR")(update)
+            else:
+                task_id = result.get('task_id')
+                escaped_task_id = escape_markdown(task_id, version=2)
+                await update.message.reply_text(
+                    (await humanize("ANALYSIS_STARTED")).format(task_id=f"`{escaped_task_id}`"),
+                    parse_mode='MarkdownV2'
+                )
+                asyncio.create_task(monitor_analysis(update, context, task_id, api_key))
+                
+        except Exception as e:
+            logging.error(f"Error during analysis: {e}")
+            await localized_message("ANALYSIS_ERROR")(update)
+        return
+    
+    items = []
+    
+    if update.message.document:
+        items.append(
+            AnalysisItem('file', update.message.document, update.message.document.file_name)
+        )
+    
+    if update.message.caption_entities or update.message.entities:
+        entities = update.message.caption_entities or update.message.entities
+        text = update.message.caption or update.message.text or ''
+        
+        for entity in entities:
+            if entity.type == 'text_link':
+                items.append(AnalysisItem('url', entity.url))
+            elif entity.type == 'url':
+                url = text[entity.offset:entity.offset + entity.length]
+                items.append(AnalysisItem('url', url))
+    
+    if update.message.media_group_id:
+        if 'media_group' not in context.chat_data:
+            context.chat_data['media_group'] = {
+                'id': update.message.media_group_id,
+                'items': []
+            }
+        
+        for item in items:
+            if item not in context.chat_data['media_group']['items']:
+                context.chat_data['media_group']['items'].append(item)
+        
+        if update.message.caption:
+            items_to_show = context.chat_data['media_group']['items']
+            del context.chat_data['media_group']
+            await display_items_list(update, context, items_to_show)
+    else:
+        await display_items_list(update, context, items)
+
+@with_locale
+async def display_items_list(update: Update, context: ContextTypes.DEFAULT_TYPE, items: List[AnalysisItem]):
+    if not items:
+        await localized_message("NO_ITEMS_TO_ANALYZE")(update)
+        return
+    
+    if len(items) == 1:
+        selected_item = items[0]
+        access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
+        if not access_granted:
+            await update.message.reply_text(api_key)
+            return
+            
+        try:
+            if selected_item.type == 'file':
+                file = selected_item.content
+                file_content = await context.bot.get_file(file.file_id)
+                file_bytes = await file_content.download_as_bytearray()
+                result = await run_file_analysis(api_key, file_bytes, file.file_name, update.effective_user.id)
+            else:
+                result = await run_url_analysis(api_key, selected_item.content, update.effective_user.id)
+                
+            if result.get('error'):
+                await localized_message("ANALYSIS_ERROR")(update)
+            else:
+                task_id = result.get('task_id')
+                escaped_task_id = escape_markdown(task_id, version=2)
+                await update.message.reply_text(
+                    (await humanize("ANALYSIS_STARTED")).format(task_id=f"`{escaped_task_id}`"),
+                    parse_mode='MarkdownV2'
+                )
+                asyncio.create_task(monitor_analysis(update, context, task_id, api_key))
+        except Exception as e:
+            logging.error(f"Error during analysis: {e}")
+            await localized_message("ANALYSIS_ERROR")(update)
+        return
+    
+    items_list = []
+    files = [item for item in items if item.type == 'file']
+    urls = [item for item in items if item.type == 'url']
+    
+    for i, item in enumerate(files, 1):
+        items_list.append(f"{i}. [FILE] {item.name}")
+    
+    for i, item in enumerate(urls, len(files) + 1):
+        items_list.append(f"{i}. [URL] {item.content}")
+    
+    items_text = "\n".join(items_list)
+    logging.debug(f"Prepared items list: {items_text}")
+    
+    await update.message.reply_text(
+        (await humanize("MULTIPLE_ITEMS_FOUND")) + "\n\n" + items_text + "\n\n" + 
+        (await humanize("SELECT_ITEM_NUMBER")),
+        disable_web_page_preview=True
+    )
+    context.user_data['next_action'] = 'select_item'
+    context.user_data['analysis_items'] = items
+
+def setup_handlers(application):
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("apikey", apikey))
+    application.add_handler(CommandHandler("getreport", getreport))
+
+    application.add_handler(MessageHandler(
+        filters.Document.ALL & ~filters.COMMAND,
+        handle_message
+    ))
+    application.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND,
+        handle_message
+    ))
+
+    logging.debug("Handlers setup completed")

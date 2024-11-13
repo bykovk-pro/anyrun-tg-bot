@@ -3,30 +3,16 @@ from contextvars import ContextVar
 
 user_language = ContextVar('user_language', default='en')
 
-class LanguageContext:
-    _instance = None
-    _language = 'en'
-    _user_language_getter = None
-
-    @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
-
-    def set_user_language_getter(self, getter):
-        self._user_language_getter = getter
-
-    def get_language(self) -> str:
-        return user_language.get()
-
 def get_current_language() -> str:
-    return LanguageContext.get_instance().get_language()
+    return user_language.get()
 
-def set_user_language_getter(getter):
-    LanguageContext.get_instance().set_user_language_getter(getter)
-
-def set_language_for_user(user: User):
-    if LanguageContext.get_instance()._user_language_getter:
-        lang = LanguageContext.get_instance()._user_language_getter(user)
-        user_language.set(lang)
+async def set_language_for_user(user: User) -> None:
+    supported_languages = {
+        'ru': 'ru', 'en': 'en', 'de': 'de', 'fr': 'fr',
+        'es': 'es', 'it': 'it', 'pl': 'pl', 'hi': 'hi',
+        'sr': 'sr', 'ja': 'ja', 'ar': 'ar', 'tr': 'tr'
+    }
+    user_lang = user.language_code.lower().split('-')[0] if user.language_code else 'en'
+    lang = supported_languages.get(user_lang, 'en')
+    user_language.set(lang)
+    return lang
