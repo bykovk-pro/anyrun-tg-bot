@@ -1,32 +1,31 @@
 import logging
 import aiohttp
-from src.lang.director import humanize
 import validators
+from src.lang.director import humanize
+from src.lang.decorators import with_locale
 
+@with_locale
 async def get_report_by_uuid(api_key: str, uuid: str):
     if not validators.uuid(uuid):
-        return {"error": True, "message": humanize("INVALID_UUID")}
+        return {"error": True, "message": await humanize("INVALID_UUID")}
 
     url = f"https://api.any.run/v1/analysis/{uuid}"
     headers = {
         "Authorization": f"API-Key {api_key}"
     }
 
-    logging.debug(f"Making API request to fetch report for UUID: {uuid}")
+    logging.debug(f"Getting report for UUID: {uuid}")
 
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(url, headers=headers) as response:
-                logging.debug(f"Received response with status: {response.status}")
                 if response.status == 200:
                     data = await response.json()
-                    analysis = data.get("data", {}).get("analysis", {})
-                    logging.debug(f"Analysis of the report (truncated): {str(analysis)[:200]}")
-                    return analysis
+                    return data.get("data", {}).get("analysis", {})
                 else:
-                    error_message = await response.json()
-                    logging.error(f"Error response: {error_message}")
-                    return {"error": True, "message": error_message.get("message", humanize("UNKNOWN_ERROR"))}
+                    error_message = await response.text()
+                    logging.error(f"API error: {error_message}")
+                    return {"error": True, "message": await humanize("REPORT_ERROR")}
         except Exception as e:
-            logging.error(f"Error fetching report: {str(e)}")
-            return {"error": True, "message": str(e)}
+            logging.error(f"Error getting report: {e}")
+            return {"error": True, "message": await humanize("ERROR_OCCURRED")}

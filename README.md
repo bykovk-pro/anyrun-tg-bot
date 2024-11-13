@@ -1,69 +1,111 @@
 # ANY.RUN for Telegram
 
-This Telegram bot provides a user-friendly interface to interact with the ANY.RUN API. It allows users to submit files and URLs for analysis, retrieve analysis results, and perform various operations with the ANY.RUN service directly through Telegram.
+A Telegram bot for interacting with the ANY.RUN sandbox service. Submit files and URLs for analysis, retrieve results, and manage your ANY.RUN API access - all through Telegram.
 
-## Key Features
+## Features
 
-- Submit files and URLs for analysis in ANY.RUN Sandbox
-- Retrieve analysis results and reports
-- Check the status of ongoing analyses
-- Manage API keys within the Telegram interface
-- Automatic user language detection
-- Admin panel for user management and system operations
+- File and URL analysis submission
+- Real-time analysis status monitoring
+- Detailed analysis reports with threat verdicts
+- Automatic language detection
+- Cross-platform support (Windows, Linux, MacOS)
+- Secure API key management
+- Database-backed task tracking
 
-## Getting Started
+## Requirements
 
-Follow these instructions to set up and run the bot.
+- Python 3.10 or higher
+- ANY.RUN API key
+- Telegram Bot Token
 
-### Installation
+## Installation
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/bykovk-pro/anyrun-tg-bot.git
-   cd anyrun-tg-bot
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/bykovk-pro/anyrun-tg-bot.git
+cd anyrun-tg-bot
+```
 
-2. **Create a virtual environment (recommended)**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate 
-   ```
+2. Create and activate virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/MacOS
+# or
+venv\Scripts\activate     # Windows
+```
 
-3. **Install the bot**:
-   ```bash
-   pip install .
-   ```
+3. Install the package:
+```bash
+pip install .
+```
 
-### Configuration
+## Configuration
 
-1. **Set up the environment variables**:
+1. Create `.env` file in the project root:
+```env
+TELEGRAM_TOKEN=your_telegram_bot_token
+TELEGRAM_ADMIN_ID=your_telegram_id
+```
 
-   Create a `.env` file in the project root with the following content:
-
-   ```plaintext
-   TELEGRAM_TOKEN=<your_telegram_token>
-   TELEGRAM_ADMIN_ID=<your_telegram_admin_id>
-   REQUIRED_GROUP_IDS=<comma_separated_group_ids>
-   DB_PASSWORD=<your_backup_password>
-   ```
-
-   Replace the placeholder values with your actual values.
-
-### Running the Bot
-
-To run the bot, use the following command:
-
+2. Start the bot:
 ```bash
 python -m src.main
 ```
 
-The bot will start and run in the foreground. For production use, consider using a process manager to run the bot as a background service:
+## Usage
 
-```bash
-systemctl start anyrun-tg-bot
-systemctl enable anyrun-tg-bot
+1. Start a chat with your bot on Telegram
+2. Use `/start` to initialize your account
+3. Set your ANY.RUN API key using `/apikey`
+4. Send files or URLs for analysis
+5. Use `/getreport` to retrieve analysis results by UUID
+
+## Commands
+
+- `/start` - Initialize bot
+- `/help` - Show help information
+- `/apikey` - Set or update API key
+- `/getreport` - Get report by UUID
+
+## Security Features
+
+- Secure API key storage
+- User access control
+- Request rate limiting
+- Input validation
+- Error handling
+
+## Development
+
+### Project Structure
 ```
+anyrun-tg-bot/
+├── src/
+│   ├── api/           # API interaction
+│   ├── db/           # Database operations
+│   └── lang/         # Localization
+├── tests/           # Test suite
+└── docs/           # Documentation
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+- GitHub Issues: [Report a bug](https://github.com/bykovk-pro/anyrun-tg-bot/issues)
+- ANY.RUN Support: [Contact support](https://any.run/support)
+
+## Acknowledgments
+
+- [ANY.RUN](https://any.run) for their excellent sandbox service
+- [python-telegram-bot](https://python-telegram-bot.org/) team
