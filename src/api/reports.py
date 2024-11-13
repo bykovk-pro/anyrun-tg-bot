@@ -7,6 +7,7 @@ from src.api.menu import show_sandbox_api_menu
 import validators
 from src.api.remote.sb_task_info import process_task_info, ResultType
 from src.api.menu_utils import create_report_menu_keyboard
+from src.api.security import check_user_access
 
 async def handle_get_reports_by_uuid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.callback_query:
@@ -41,9 +42,9 @@ async def process_uuid_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await show_sandbox_api_menu(update, context)
         return
 
-    api_key = context.user_data.get('api_key')
-    if not api_key:
-        await update.message.reply_text(humanize("API_KEY_NOT_FOUND"))
+    access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
+    if not access_granted:
+        await update.message.reply_text(api_key)
         await show_sandbox_api_menu(update, context)
         return
 

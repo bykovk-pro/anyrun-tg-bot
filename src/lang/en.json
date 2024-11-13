@@ -44,7 +44,7 @@
     "INACTIVE": "Inactive",
     "INVALID_BACKUP_FILE": "Invalid backup file. Please upload a valid database backup file.",
     "INVALID_DATA_FORMAT": "Error: Invalid data format received.",
-    "INVALID_INPUT": "Invalid input. Please enter a valid URL or use the menu.",
+    "INVALID_INPUT": "Please provide a valid URL in your message.",
     "INVALID_UUID": "Invalid UUID format.",
     "LAST_TEN_REPORTS": "Here are the last 10 reports you have run.",
     "MAIN_MENU_TEXT": "Main Menu",

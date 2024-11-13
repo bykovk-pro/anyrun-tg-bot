@@ -16,6 +16,32 @@ from src.db.active_tasks import set_task_inactive
 import validators
 import asyncio
 import json
+import re
+from typing import Optional
+
+def extract_url(text: str, max_url_length: int = 2048) -> Optional[str]:
+    """Extract first URL from text using regex pattern, supporting both plain URLs and markdown links."""
+    if not text or len(text) > 10000:  # Reasonable limit for input text
+        return None
+        
+    # Pattern for markdown links [text](url)
+    markdown_pattern = r'\[([^\]]+)\]\((https?://[^\s\)]{1,2048})\)'
+    # Pattern for plain URLs
+    url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2})){1,2048}[^\s]*'
+    
+    # First try to find markdown links
+    markdown_match = re.search(markdown_pattern, text)
+    if markdown_match:
+        url = markdown_match.group(2)
+        return url if len(url) <= max_url_length else None
+    
+    # If no markdown links found, look for plain URLs
+    url_match = re.search(url_pattern, text)
+    if url_match:
+        url = url_match.group(0)
+        return url if len(url) <= max_url_length else None
+    
+    return None
 
 async def sandbox_api_action(update: Update, context: ContextTypes.DEFAULT_TYPE, action_func):
     user_id = update.effective_user.id
@@ -47,25 +73,80 @@ async def _run_file_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE,
     context.user_data['api_key'] = api_key
 
 async def process_url_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    url = update.message.text.strip()
-    if not validators.url(url):
+    message = update.message
+    
+    # Detailed debug logging
+    logging.debug("=" * 50)
+    logging.debug("Processing message:")
+    logging.debug(f"Message ID: {message.message_id}")
+    logging.debug(f"From user: {update.effective_user.id}")
+    logging.debug(f"Raw message text: '{message.text}'")
+    
+    # Get text from message considering different message types
+    message_text = ''
+    
+    try:
+        # First check for entities with URLs
+        if message.entities:
+            for entity in message.entities:
+                if entity.type == 'text_link' and hasattr(entity, 'url'):
+                    message_text = entity.url
+                    logging.debug(f"Found URL in text_link entity: {message_text}")
+                    break
+                elif entity.type == 'url' and message.text:
+                    url_text = message.text[entity.offset:entity.offset + entity.length]
+                    message_text = url_text
+                    logging.debug(f"Found URL in url entity: {message_text}")
+                    break
+        
+        # If no URL found in entities, try regular text
+        if not message_text and message.text:
+            message_text = message.text.strip()
+            logging.debug(f"Using plain message text: {message_text}")
+        
+        if not message_text:
+            logging.warning(f"No text found in message from user {update.effective_user.id}")
+            await update.message.reply_text(humanize("INVALID_INPUT"))
+            return
+
+        # Extract URL from message text
+        url = extract_url(message_text)
+        logging.debug(f"Extracted URL: {url}")
+        
+        if not url:
+            logging.info(f"User {update.effective_user.id} provided text without URL: {message_text}")
+            await update.message.reply_text(humanize("INVALID_INPUT"))
+            return
+
+        # Validate extracted URL
+        if not validators.url(url):
+            logging.warning(f"User {update.effective_user.id} provided invalid URL: {url}")
+            await update.message.reply_text(humanize("INVALID_INPUT"))
+            return
+
+        access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
+        if not access_granted:
+            logging.warning(f"Access denied for user {update.effective_user.id}")
+            await update.message.reply_text(api_key)
+            return
+
+        logging.info(f"Processing URL analysis for user {update.effective_user.id}: {url}")
+        result = await run_url_analysis(api_key, url, update.effective_user.id)
+
+        if 'error' in result:
+            logging.error(f"URL analysis error for user {update.effective_user.id}: {result['error']}")
+            await update.message.reply_text(humanize("URL_ANALYSIS_ERROR").format(error=result['error']))
+        else:
+            logging.info(f"URL analysis submitted for user {update.effective_user.id}, task_id: {result['task_id']}")
+            await update.message.reply_text(humanize("URL_ANALYSIS_SUBMITTED_CHECK_ACTIVE").format(uuid=result['task_id']))
+            asyncio.create_task(monitor_analysis_status(update, context, api_key, result['task_id']))
+
+        await show_sandbox_api_menu(update, context)
+            
+    except AttributeError as e:
+        logging.error(f"Error accessing message attributes: {e}")
         await update.message.reply_text(humanize("INVALID_INPUT"))
         return
-
-    access_granted, api_key = await check_user_access(context.bot, update.effective_user.id)
-    if not access_granted:
-        await update.message.reply_text(api_key)
-        return
-
-    result = await run_url_analysis(api_key, url, update.effective_user.id)
-
-    if 'error' in result:
-        await update.message.reply_text(humanize("URL_ANALYSIS_ERROR").format(error=result['error']))
-    else:
-        await update.message.reply_text(humanize("URL_ANALYSIS_SUBMITTED_CHECK_ACTIVE").format(uuid=result['task_id']))
-        asyncio.create_task(monitor_analysis_status(update, context, api_key, result['task_id']))
-
-    await show_sandbox_api_menu(update, context)
 
 async def process_file_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.document:
@@ -119,6 +200,7 @@ async def monitor_analysis_status(update: Update, context: ContextTypes.DEFAULT_
             if status['status'] == 'completed':
                 report = await remote_get_report_by_uuid(api_key, task_id)
                 if report:
+                    context.user_data['current_report'] = report
                     await display_report_info(update, context, report)
                 else:
                     await context.bot.send_message(
