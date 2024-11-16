@@ -102,10 +102,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-- GitHub Issues: [Report a bug](https://github.com/bykovk-pro/anyrun-tg-bot/issues)
-- ANY.RUN Support: [Contact support](https://any.run/support)
+- Bot Issues: [Report a bug](https://github.com/bykovk-pro/anyrun-tg-bot/issues)
+- ANY.RUN Support: [Contact support](https://app.any.run/contact-us)
+- ANY.RUN API: [Read API documentation](https://any.run/api-documentation/)
 
 ## Acknowledgments
 
-- [ANY.RUN](https://any.run) for their excellent sandbox service
+- [ANY.RUN](https://app.any.run) for their excellent sandbox service
 - [python-telegram-bot](https://python-telegram-bot.org/) team
